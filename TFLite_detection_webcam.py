@@ -1,5 +1,5 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
-#V 2
+#V 3
 # Author: Evan Juras
 # Date: 10/27/19 created by author
 # Being used by the CCC robot ece410
