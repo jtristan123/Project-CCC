@@ -1,3 +1,4 @@
+# This code is for a Raspberry Pi to measure distance using an ultrasonic sensor (HC-SR04).
 import RPi.GPIO as GPIO
 import time
 GPIO.setmode(GPIO.BCM)
