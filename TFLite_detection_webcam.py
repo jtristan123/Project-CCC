@@ -1,7 +1,8 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
-#
+#V 2
 # Author: Evan Juras
-# Date: 10/27/19
+# Date: 10/27/19 created by author
+# Being used by the CCC robot ece410
 # Description: 
 # This program uses a TensorFlow Lite model to perform object detection on a live webcam
 # feed. It draws boxes and scores around the objects of interest in each frame from the
@@ -12,7 +13,7 @@
 # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/examples/python/label_image.py
 #
 # I added my own method of drawing boxes and labels using OpenCV.
-
+# this code was based off a 3 part tutorial, more information in the report, and is being used for our goal
 # Import packages
 import os
 import argparse
@@ -20,11 +21,45 @@ import cv2
 import numpy as np
 import sys
 import time
+from time import sleep
 from threading import Thread
 import importlib.util
+import right_motora
+import left_motora
+import str_motora
+from gpiozero import DistanceSensor
+from Rosmaster_Lib import Rosmaster
 
+#creates the bot object
+bot = Rosmaster()
+bot.create_receive_threading()
+#import ultra3
+#import TT_motora
+sensor = DistanceSensor(echo=16,trigger=26)
+
+#sets the the webcam window to 896 x 504
+IM_WIDTH = 896
+IM_HEIGHT = 504
+#sets the TL: top left and the BR: bottom right
+TL_inside = (int(IM_WIDTH*.4),int(IM_HEIGHT*.70))
+BR_inside = (int(IM_WIDTH*.6),int(IM_HEIGHT*.9))
+#path for stright
+TL_path = (int(IM_WIDTH*.48),int(IM_HEIGHT*0))
+BR_path = (int(IM_WIDTH*.52),int(IM_HEIGHT*1))
+#TL_inside = (int(IM_WIDTH*0.1),int(IM_HEIGHT*0.35))
+#BR_inside = (int(IM_WIDTH*0.45),int(IM_HEIGHT-5))
+font = cv2.FONT_HERSHEY_SIMPLEX
 # Define VideoStream class to handle streaming of video from webcam in separate processing thread
 # Source - Adrian Rosebrock, PyImageSearch: https://www.pyimagesearch.com/2015/12/28/increasing-raspberry-pi-fps-with-python-and-opencv/
+print("motion going")
+
+def car_motion(V_x, V_y, V_z):
+    speed_x= V_x / 10.0
+    speed_y = V_y / 10.0
+    speed_z = V_z / 10.0
+    bot.set_car_motion(speed_x, speed_y, speed_z)
+    return speed_x, speed_y, speed_z
+
 class VideoStream:
     """Camera object that controls video streaming from the Picamera"""
     def __init__(self,resolution=(640,480),framerate=30):
@@ -76,7 +111,7 @@ parser.add_argument('--labels', help='Name of the labelmap file, if different th
 parser.add_argument('--threshold', help='Minimum confidence threshold for displaying detected objects',
                     default=0.5)
 parser.add_argument('--resolution', help='Desired webcam resolution in WxH. If the webcam does not support the resolution entered, errors may occur.',
-                    default='1280x720')
+                    default='896x504')
 parser.add_argument('--edgetpu', help='Use Coral Edge TPU Accelerator to speed up detection',
                     action='store_true')
 
@@ -85,7 +120,7 @@ args = parser.parse_args()
 MODEL_NAME = args.modeldir
 GRAPH_NAME = args.graph
 LABELMAP_NAME = args.labels
-min_conf_threshold = float(args.threshold)
+min_conf_threshold = float(.99)#(args.threshold)
 resW, resH = args.resolution.split('x')
 imW, imH = int(resW), int(resH)
 use_TPU = args.edgetpu
@@ -169,6 +204,7 @@ time.sleep(1)
 
 #for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
 while True:
+    flag = 0
 
     # Start timer (for calculating frame rate)
     t1 = cv2.getTickCount()
@@ -181,6 +217,13 @@ while True:
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_resized = cv2.resize(frame_rgb, (width, height))
     input_data = np.expand_dims(frame_resized, axis=0)
+    
+    #line divides the pic
+    cv2.rectangle(frame,TL_path,BR_path,(225,0,255),3)
+    cv2.putText(frame," ",(TL_inside[0]+10,TL_inside[1]-10),font,1,(225,0,255),3,cv2.LINE_AA)
+    #touch zone the frame cones needs to be to get arm down
+    cv2.rectangle(frame,TL_inside,BR_inside,(20,20,255),3)
+    cv2.putText(frame,"touch zone",(TL_inside[0]+10,TL_inside[1]-10),font,1,(20,255,255),3,cv2.LINE_AA)
 
     # Normalize pixel values if using a floating model (i.e. if model is non-quantized)
     if floating_model:
@@ -196,7 +239,8 @@ while True:
     scores = interpreter.get_tensor(output_details[scores_idx]['index'])[0] # Confidence of detected objects
 
     # Loop over all detections and draw detection box if confidence is above minimum threshold
-    for i in range(len(scores)):
+    for i in range(2):
+    #for i in range(len(scores)):#find all the matching objects more than one
         if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
 
             # Get bounding box coordinates and draw box
@@ -206,16 +250,128 @@ while True:
             ymax = int(min(imH,(boxes[i][2] * imH)))
             xmax = int(min(imW,(boxes[i][3] * imW)))
             
-            cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2)
+            #width = int((min(imW,(boxes[i][3] * imW))) - (max(1,(boxes[i][1] * imW))))
+            
 
             # Draw label
             object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
-            label = '%s: %d%%' % (object_name, int(scores[i]*100)) # Example: 'person: 72%'
-            labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
-            label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
-            cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
-            cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text
+            if object_name == "cone":
+                if ymin < 250:
+                    cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (255, 10, 0), 2)
+                    label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymin) # Example: 'person: 72%'
+                    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
+                    label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
+                    cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
+                    cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text 
+                else:
+                    cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2) #this is the squares around the cones
+                    label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymax - ymin) # Example: 'person: 72%'
+                    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
+                    label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
+                    cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
+                    cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text   
+    
+    # I guess the arm action goes over here but it keeps looping till the green goes away
+                print('i see something!')
+            #print(ymin,' ',xmin,' ',ymax,' ',xmax)
+                x = int(((xmin+xmax)/2))
+                y = int(((ymin+ymax)/2))
+                cv2.circle(frame,(x,y), 5, (75,13,180), -1)
 
+                left_diff = int(TL_path[0] - x) 
+                print(x,' ',y)
+                if (x < TL_path[0]):
+                    print('LLLLLL turning right wheels')
+                    left_diff = int(TL_path[0] - x) 
+                    print('left diff: ',left_diff)  
+                    #right wheels trun function
+                    left_motora.lmotor()
+                    #bot.set_car_motion(0,1,0)
+                    sleep(0.1)
+                    bot.set_car_motion(0,0,0)
+                elif (x > BR_path[0]):
+                    print('RRR turning left wheels')
+                    right_diff = int(x - BR_path[0])
+                    print('right diff: ',right_diff)
+                    #left wheels trun function
+                    right_motora.rmotor()
+                    #bot.set_car_motion(0,-1,0)
+                    sleep(0.1)
+                    bot.set_car_motion(0,0,0)
+            #this portion is for having a red square "arm-drop" zone, if you want to use it
+            #elif ((x > TL_inside[0]) and (x < BR_inside[0]) and (y > TL_inside[1]) and (y < BR_inside[1])):
+                #print('touch down, drop arm ready')
+                #print(BR_inside,' ',TL_inside)
+            #this is to test each motor with a duration, its for debugging 
+                #time1 = input('enter time1:\n')
+                #time2 = input('enter time2:\n')
+                #tt_motora.motor(time1,time2)
+                else:
+                    print('MMMM going forward')
+                    bot.set_car_motion(1,0,0)
+                    sleep(1)
+                    bot.set_car_motion(0,0,0)
+                    print('ultra3.py')
+                    while flag == 1: #i change it back to 0 for urasonic sensor
+                        dis = sensor.distance *100
+                        print('distance: {:.2f} cm'.format(dis))
+                        sleep(0.3)
+                        #if cone in touchdwon zone stop and drop arm
+                        if (dis < 0):
+                            print("calling arm program")
+                            flag = 1;
+                            #bot.set_uart_servo_angle( 6, 170, run_time = 1200)
+                            #time.sleep(1)
+                            #bot.set_uart_servo_angle( 1, 85, run_time = 1200)
+                            #time.sleep(1)
+                            #bot.set_uart_servo_angle( 3, 40, run_time = 1200)
+                            #time.sleep(1)
+                            #bot.set_uart_servo_angle( 4, 30 , run_time = 1200)
+                            #time.sleep(2)
+                            #bot.set_uart_servo_angle( 2, 30, run_time = 1500)
+                            time.sleep(1)
+                            bot.set_uart_servo_angle( 2, 10, run_time = 1200)
+                            time.sleep(1)
+                            bot.set_uart_servo_angle( 4, 50, run_time = 1200)
+                            time.sleep(2)
+                            bot.set_uart_servo_angle( 5, 180, run_time = 900)
+                            time.sleep(1)
+                            #CONE IS ON///////////////////////////////////////////////////////////
+                            bot.set_uart_servo_angle( 6, 110, run_time = 1200)
+                            time.sleep(3)
+                            bot.set_uart_servo_angle( 2, 70, run_time = 1200)
+                            time.sleep(3)
+                            bot.set_uart_servo_angle( 3, 70, run_time = 1200)
+                            time.sleep(3)
+                            bot.set_uart_servo_angle( 1, 180, run_time = 1200) #making the turn
+                            time.sleep(3)
+                            bot.set_uart_servo_angle( 4, 10, run_time = 1200)
+                            time.sleep(3)
+                            bot.set_uart_servo_angle( 3, 25, run_time = 1200)
+                            time.sleep(3)
+                            bot.set_uart_servo_angle( 6, 170, run_time = 1200)
+                            time.sleep(3)
+                            #cone is dropped
+                            bot.set_uart_servo_angle( 1, 85, run_time = 1200)
+                            time.sleep(3)
+                            bot.set_uart_servo_angle( 3, 40, run_time = 1200)
+                            time.sleep(3)
+                            bot.set_uart_servo_angle( 4, 30, run_time = 1200)
+                            time.sleep(1 )
+                            print("arm is done")
+                        else:
+                            str_motora.smotor()
+                            sleep(3) #to cheak distance
+                            #del bot
+                                                
+                    #ultra3.ultra()
+                    #str_motora.smotor()
+                         #or till utlra sonic or object gets to tigger zone 
+            print('all done next cone')#seems like a lag till it goes though all mb do like a clear buffer
+        else:
+            print('looking......')
+            bot.set_car_motion(0,0,0)
+ 
     # Draw framerate in corner of frame
     cv2.putText(frame,'FPS: {0:.2f}'.format(frame_rate_calc),(30,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0),2,cv2.LINE_AA)
 
@@ -234,3 +390,4 @@ while True:
 # Clean up
 cv2.destroyAllWindows()
 videostream.stop()
+del bot
