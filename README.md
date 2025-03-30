@@ -196,3 +196,5 @@ If you plan to use Colab frequently for training models, I recommend getting a C
 
 Colab keeps track of how much GPU time you use, and cuts you off from using GPU-enabled instances once you reach a certain use time. If you get the message telling you you're cut off from GPU instances, then that's a good indicator that you use Colab enough to justify paying for a Pro subscription.
 </details>
+# Project-CCC
+this is a project with my own robot
