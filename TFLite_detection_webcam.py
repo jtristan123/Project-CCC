@@ -385,7 +385,7 @@ while True:
 
     # Press 'q' to quit
     if cv2.waitKey(1) == ord('q'):
-        break
+        break #this breaks the while true: exits while loop
 
 # Clean up
 cv2.destroyAllWindows()
