@@ -218,7 +218,7 @@ while True:
     frame_resized = cv2.resize(frame_rgb, (width, height))
     input_data = np.expand_dims(frame_resized, axis=0)
     
-    #line divides the pic
+    #line divides the frame and draws boxes path and touch zone
     cv2.rectangle(frame,TL_path,BR_path,(225,0,255),3)
     cv2.putText(frame," ",(TL_inside[0]+10,TL_inside[1]-10),font,1,(225,0,255),3,cv2.LINE_AA)
     #touch zone the frame cones needs to be to get arm down
@@ -239,12 +239,13 @@ while True:
     scores = interpreter.get_tensor(output_details[scores_idx]['index'])[0] # Confidence of detected objects
 
     # Loop over all detections and draw detection box if confidence is above minimum threshold
-    for i in range(2):
+    for i in range(2): #each frame it will perform these
     #for i in range(len(scores)):#find all the matching objects more than one
         if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
 
             # Get bounding box coordinates and draw box
-            # Interpreter can return coordinates that are outside of image dimensions, need to force them to be within image using max() and min()
+            # Interpreter can return coordinates that are outside of image dimensions, 
+	    #  need to force them to be within image using max() and min()
             ymin = int(max(1,(boxes[i][0] * imH)))
             xmin = int(max(1,(boxes[i][1] * imW)))
             ymax = int(min(imH,(boxes[i][2] * imH)))
@@ -255,15 +256,15 @@ while True:
 
             # Draw label
             object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
-            if object_name == "cone":
-                if ymin < 250:
+            if object_name == "cone": #only do this if cone is found
+                if ymin < 250: #this is placeholder for the closest cone(perform pick-up )
                     cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (255, 10, 0), 2)
                     label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymin) # Example: 'person: 72%'
                     labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
                     label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
                     cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
                     cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text 
-                else:
+                else: #placeholder to the rest behind (do nothing)
                     cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2) #this is the squares around the cones
                     label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymax - ymin) # Example: 'person: 72%'
                     labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
@@ -271,7 +272,7 @@ while True:
                     cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
                     cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text   
     
-    # I guess the arm action goes over here but it keeps looping till the green goes away
+    	    #PERFORM PICK-UP, this part will drive up to closest clone and pick-up
                 print('i see something!')
             #print(ymin,' ',xmin,' ',ymax,' ',xmax)
                 x = int(((xmin+xmax)/2))
