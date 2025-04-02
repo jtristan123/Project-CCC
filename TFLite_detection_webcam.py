@@ -274,6 +274,9 @@ while True:
     
     	    #PERFORM PICK-UP, this part will drive up to closest clone and pick-up
                 print('i see something!')
+		    # i think it wounld be better to make a caluctue on how far it is from the middle of PATH
+		    # half the dis and that how long to run the motors then update with
+		    # updated frame untill its in the middle of the PATH, in each if statement
             #print(ymin,' ',xmin,' ',ymax,' ',xmax)
                 x = int(((xmin+xmax)/2))
                 y = int(((ymin+ymax)/2))
