@@ -334,13 +334,13 @@ while True:
             				print("Obstacle detected! Distance: {:.2f} cm".format(dis))
             				stop_event.set()  # signal to stop the bot
             				flag = 0				
-# Start threads
-move_thread = threading.Thread(target=move_forward)
-sensor_thread = threading.Thread(target=read_sensor)
-move_thread.start()
-sensor_thread.start()
-move_thread.join()
-sensor_thread.join() #to exit end threding and do the PICK-UP
+			# Start threads
+			move_thread = threading.Thread(target=move_forward)
+			sensor_thread = threading.Thread(target=read_sensor)
+			move_thread.start()
+			sensor_thread.start()
+			move_thread.join()
+			sensor_thread.join() #to exit end threding and do the PICK-UP
                     bot.set_car_motion(1,0,0)
                     sleep(1) #runs for one sec then updates
                     bot.set_car_motion(0,0,0)
