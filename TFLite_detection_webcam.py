@@ -23,6 +23,7 @@ import sys
 import time
 from time import sleep
 from threading import Thread
+import threading
 import importlib.util
 import right_motora
 import left_motora
@@ -59,6 +60,28 @@ def car_motion(V_x, V_y, V_z):
     speed_z = V_z / 10.0
     bot.set_car_motion(speed_x, speed_y, speed_z)
     return speed_x, speed_y, speed_z
+
+def move_forward():
+    print('MMMM going forward')
+    bot.set_car_motion(1, 0, 0)
+    # Continuously check if it should stop
+    while not stop_event.is_set():
+        sleep(0.1)
+    bot.set_car_motion(0, 0, 0)
+    print('Movement stopped early due to obstacle.')
+			
+def read_sensor(threshold=10):
+    global flag
+    while flag == 1:
+        dis = sensor.distance * 100
+        print('distance: {:.2f} cm'.format(dis))
+        sleep(0.3)
+        if dis < threshold:
+            print("Obstacle detected! Distance: {:.2f} cm".format(dis))
+            stop_event.set()  # signal to stop the bot
+            flag = 0
+
+stop_event = threading.Event()
 
 class VideoStream:
     """Camera object that controls video streaming from the Picamera"""
@@ -314,37 +337,14 @@ while True:
 	#i think we should have uratsonic sensor here aswell, turn on sensor and start to take readings 
 	#we may have to do a threding and have moving forward and sensor run at the same time
                     print('MMMM going forward')
-			stop_event = threading.Event()
-			
-			def move_forward():
-    				print('MMMM going forward')
-    				bot.set_car_motion(1, 0, 0)
-				 # Continuously check if it should stop
-    				while not stop_event.is_set():
-        			sleep(0.1)
-    				bot.set_car_motion(0, 0, 0)
-    				print('Movement stopped early due to obstacle.')
-			def read_sensor(threshold=10):
-    				global flag
-    				while flag == 1:
-        			dis = sensor.distance * 100
-        			print('distance: {:.2f} cm'.format(dis))
-        			sleep(0.3)
-        			if dis < threshold:
-            				print("Obstacle detected! Distance: {:.2f} cm".format(dis))
-            				stop_event.set()  # signal to stop the bot
-            				flag = 0				
-			# Start threads
-			move_thread = threading.Thread(target=move_forward)
-			sensor_thread = threading.Thread(target=read_sensor)
-			move_thread.start()
-			sensor_thread.start()
-			move_thread.join()
-			sensor_thread.join() #to exit end threding and do the PICK-UP
-                    bot.set_car_motion(1,0,0)
-                    sleep(1) #runs for one sec then updates
-                    bot.set_car_motion(0,0,0)
-                    print('ultra3.py')
+            # Start threads
+                    move_thread = threading.Thread(target=move_forward)
+                    sensor_thread = threading.Thread(target=read_sensor)
+                    move_thread.start()
+                    sensor_thread.start()
+                    move_thread.join()
+                    sensor_thread.join() #to exit end threding and do the PICK-UP
+                    print("robot stopped. Deploying arm... ultra3.py")
 	# then stop to take a reading aka print value from sensor
                     while flag == 1: #i change it back to 0 for urasonic sensor
                         dis = sensor.distance * 100
