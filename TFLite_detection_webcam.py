@@ -300,7 +300,7 @@ while True:
                     #left wheels trun function
                     right_motora.rmotor()
                     #bot.set_car_motion(0,-1,0)
-                    sleep(0.1)
+                    sleep(0.1) #runs last command for 0.1 secs
                     bot.set_car_motion(0,0,0)
             #this portion is for having a red square "arm-drop" zone, if you want to use it
             #elif ((x > TL_inside[0]) and (x < BR_inside[0]) and (y > TL_inside[1]) and (y < BR_inside[1])):
@@ -311,17 +311,19 @@ while True:
                 #time2 = input('enter time2:\n')
                 #tt_motora.motor(time1,time2)
                 else:
+	 #i think we should have uratsonic sensor here aswell, turn on sensor and start to take readings 
+	#we may have to do a threding and have moving forward and sensor run at the same time 
                     print('MMMM going forward')
                     bot.set_car_motion(1,0,0)
-                    sleep(1)
+                    sleep(1) #runs for one sec then updates
                     bot.set_car_motion(0,0,0)
                     print('ultra3.py')
+	# then stop to take a reading aka print value from sensor
                     while flag == 1: #i change it back to 0 for urasonic sensor
-                        dis = sensor.distance *100
+                        dis = sensor.distance * 100
                         print('distance: {:.2f} cm'.format(dis))
-                        sleep(0.3)
-                        #if cone in touchdwon zone stop and drop arm
-                        if (dis < 0):
+                        sleep(0.3) #take a reading every 0.3 secs 
+                        if (dis < 0): 
                             print("calling arm program")
                             flag = 1;
                             #bot.set_uart_servo_angle( 6, 170, run_time = 1200)
@@ -364,8 +366,8 @@ while True:
                             time.sleep(1 )
                             print("arm is done")
                         else:
-                            str_motora.smotor()
-                            sleep(3) #to cheak distance
+                            str_motora.smotor() #keep going stright 
+                            sleep(3) #for 3 secs go stright 
                             #del bot
                                                 
                     #ultra3.ultra()
