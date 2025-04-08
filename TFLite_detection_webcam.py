@@ -320,7 +320,8 @@ while True:
                     left_diff = int(TL_path[0] - x) 
                     print('left diff: ',left_diff)  
                     #right wheels trun function
-                    left_motora.lmotor()
+                    #left_motora.lmotor()
+                    bot.set_car_motion(0, 1, 0)  # Y axis positive (left wheels turn)
                     #bot.set_car_motion(0,1,0)
                     sleep(0.5)
                     bot.set_car_motion(0,0,0)
@@ -329,7 +330,8 @@ while True:
                     right_diff = int(x - BR_path[0])
                     print('right diff: ',right_diff)
                     #left wheels trun function
-                    right_motora.rmotor()
+                    #right_motora.rmotor()
+                    bot.set_car_motion(0, -1, 0)  # Y axis positive (left wheels turn)
                     #bot.set_car_motion(0,-1,0)
                     sleep(0.5)
                     bot.set_car_motion(0,0,0)
