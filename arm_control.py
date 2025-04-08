@@ -3,13 +3,13 @@ from Rosmaster_Lib import Rosmaster
 
 bot = Rosmaster()
 bot.create_receive_threading()
-enable = 1
+#enable = 2
 
-#def arm_servo(s_angle):
-    #bot.set_uart_servo_angle(servo_id, s_angle, run_time)
+def arm_servo(s_angle):
+    bot.set_uart_servo_angle(servo_id, s_angle, run_time)
 #starting point and reset
-bot.set_uart_servo_torque(enable)
-print("enable = 2")
+    bot.set_uart_servo_torque(enable)
+    print("enable = 2")
 #each function has (servo id: 1 - 6) (angle 0 - 180) and run_time(speed HIGHER IS SLOWER)
 bot.set_uart_servo_angle( 6, 180, run_time = 1500)
 time.sleep(1)

@@ -17,6 +17,7 @@
 # Import packages
 import os
 import argparse
+import threading
 import cv2
 import numpy as np
 import sys
@@ -59,6 +60,31 @@ def car_motion(V_x, V_y, V_z):
     speed_z = V_z / 10.0
     bot.set_car_motion(speed_x, speed_y, speed_z)
     return speed_x, speed_y, speed_z
+
+def move_forward():
+    print('MMMM going forward')
+    bot.set_car_motion(1, 0, 0)
+    while not stop_event.is_set():
+        sleep(0.1)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            print('Manual stop triggered.')
+            stop_event.set()
+            break
+    bot.set_car_motion(0, 0, 0)
+    print('Movement stopped (obstacle or manual).')
+			
+def read_sensor(threshold=10):
+    global flag
+    while flag == 1:
+        dis = sensor.distance * 100
+        print('distance: {:.2f} cm'.format(dis))
+        sleep(0.3)
+        if dis < threshold:
+            print("Obstacle detected! Distance: {:.2f} cm".format(dis))
+            stop_event.set()  # signal to stop the bot
+            flag = 0
+
+stop_event = threading.Event()
 
 class VideoStream:
     """Camera object that controls video streaming from the Picamera"""
@@ -244,7 +270,8 @@ while True:
         if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
 
             # Get bounding box coordinates and draw box
-            # Interpreter can return coordinates that are outside of image dimensions, need to force them to be within image using max() and min()
+            # Interpreter can return coordinates that are outside of image dimensions, 
+            # need to force them to be within image using max() and min()
             ymin = int(max(1,(boxes[i][0] * imH)))
             xmin = int(max(1,(boxes[i][1] * imW)))
             ymax = int(min(imH,(boxes[i][2] * imH)))
@@ -271,8 +298,11 @@ while True:
                     cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
                     cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text   
     
-    # I guess the arm action goes over here but it keeps looping till the green goes away
+    	    #PERFORM PICK-UP, this part will drive up to closest clone and pick-up
                 print('i see something!')
+		    # i think it wounld be better to make a caluctue on how far it is from the middle of PATH
+		    # half the dis and that how long to run the motors then update with
+		    # updated frame untill its in the middle of the PATH, in each if statement
             #print(ymin,' ',xmin,' ',ymax,' ',xmax)
                 x = int(((xmin+xmax)/2))
                 y = int(((ymin+ymax)/2))
@@ -287,7 +317,7 @@ while True:
                     #right wheels trun function
                     left_motora.lmotor()
                     #bot.set_car_motion(0,1,0)
-                    sleep(0.1)
+                    sleep(0.5)
                     bot.set_car_motion(0,0,0)
                 elif (x > BR_path[0]):
                     print('RRR turning left wheels')
@@ -296,7 +326,7 @@ while True:
                     #left wheels trun function
                     right_motora.rmotor()
                     #bot.set_car_motion(0,-1,0)
-                    sleep(0.1)
+                    sleep(0.5)
                     bot.set_car_motion(0,0,0)
             #this portion is for having a red square "arm-drop" zone, if you want to use it
             #elif ((x > TL_inside[0]) and (x < BR_inside[0]) and (y > TL_inside[1]) and (y < BR_inside[1])):
@@ -306,67 +336,81 @@ while True:
                 #time1 = input('enter time1:\n')
                 #time2 = input('enter time2:\n')
                 #tt_motora.motor(time1,time2)
-                else:
-                    print('MMMM going forward')
-                    bot.set_car_motion(1,0,0)
-                    sleep(1)
-                    bot.set_car_motion(0,0,0)
-                    print('ultra3.py')
+                elif (TL_path[0] <= x <= BR_path[0]):
+	#i think we should have uratsonic sensor here aswell, turn on sensor and start to take readings 
+	#we may have to do a threding and have moving forward and sensor run at the same time
+                    print('Cone lined up! Moving forward...')
+            # Start threads
+                    stop_event.clear()  # Make sure event is cleared before starting
+                    move_thread = threading.Thread(target=move_forward)
+                    sensor_thread = threading.Thread(target=read_sensor)
+                    move_thread.start()
+                    sensor_thread.start()
+                    move_thread.join()
+                    sensor_thread.join() #to exit end threding and do the PICK-UP
+                    print("robot stopped. Deploying arm... ultra3.py")
+	        # then stop to take a reading aka print value from sensor
+                #else:
+                 #    print('MMMM going forward')
+                  #   bot.set_car_motion(1,0,0)
+                   #  sleep(1)
+                    # bot.set_car_motion(0,0,0)
+                     #print('ultra3.py')
                     while flag == 1: #i change it back to 0 for urasonic sensor
-                        dis = sensor.distance *100
-                        print('distance: {:.2f} cm'.format(dis))
-                        sleep(0.3)
-                        #if cone in touchdwon zone stop and drop arm
-                        if (dis < 0):
-                            print("calling arm program")
-                            flag = 1;
-                            #bot.set_uart_servo_angle( 6, 170, run_time = 1200)
-                            #time.sleep(1)
-                            #bot.set_uart_servo_angle( 1, 85, run_time = 1200)
-                            #time.sleep(1)
-                            #bot.set_uart_servo_angle( 3, 40, run_time = 1200)
-                            #time.sleep(1)
-                            #bot.set_uart_servo_angle( 4, 30 , run_time = 1200)
-                            #time.sleep(2)
-                            #bot.set_uart_servo_angle( 2, 30, run_time = 1500)
-                            time.sleep(1)
-                            bot.set_uart_servo_angle( 2, 10, run_time = 1200)
-                            time.sleep(1)
-                            bot.set_uart_servo_angle( 4, 50, run_time = 1200)
-                            time.sleep(2)
-                            bot.set_uart_servo_angle( 5, 180, run_time = 900)
-                            time.sleep(1)
-                            #CONE IS ON///////////////////////////////////////////////////////////
-                            bot.set_uart_servo_angle( 6, 110, run_time = 1200)
-                            time.sleep(3)
-                            bot.set_uart_servo_angle( 2, 70, run_time = 1200)
-                            time.sleep(3)
-                            bot.set_uart_servo_angle( 3, 70, run_time = 1200)
-                            time.sleep(3)
-                            bot.set_uart_servo_angle( 1, 180, run_time = 1200) #making the turn
-                            time.sleep(3)
-                            bot.set_uart_servo_angle( 4, 10, run_time = 1200)
-                            time.sleep(3)
-                            bot.set_uart_servo_angle( 3, 25, run_time = 1200)
-                            time.sleep(3)
-                            bot.set_uart_servo_angle( 6, 170, run_time = 1200)
-                            time.sleep(3)
-                            #cone is dropped
-                            bot.set_uart_servo_angle( 1, 85, run_time = 1200)
-                            time.sleep(3)
-                            bot.set_uart_servo_angle( 3, 40, run_time = 1200)
-                            time.sleep(3)
-                            bot.set_uart_servo_angle( 4, 30, run_time = 1200)
-                            time.sleep(1 )
-                            print("arm is done")
-                        else:
-                            str_motora.smotor()
-                            sleep(3) #to cheak distance
-                            #del bot
-                                                
-                    #ultra3.ultra()
-                    #str_motora.smotor()
-                         #or till utlra sonic or object gets to tigger zone 
+                         dis = sensor.distance *100
+                         print('distance: {:.2f} cm'.format(dis))
+                         sleep(0.3)
+                         #if cone in touchdwon zone stop and drop arm
+                         if (dis < 0):
+                             print("calling arm program")
+                             flag = 1;
+                         #bot.set_uart_servo_angle( 6, 170, run_time = 1200)
+                         #time.sleep(1)
+                         #bot.set_uart_servo_angle( 1, 85, run_time = 1200)
+                         #time.sleep(1)
+                         #bot.set_uart_servo_angle( 3, 40, run_time = 1200)
+                         #time.sleep(1)
+                         #bot.set_uart_servo_angle( 4, 30 , run_time = 1200)
+                         #time.sleep(2)
+                         #bot.set_uart_servo_angle( 2, 30, run_time = 1500)
+                             time.sleep(1)
+                             bot.set_uart_servo_angle( 2, 10, run_time = 1200)
+                             time.sleep(1)
+                             bot.set_uart_servo_angle( 4, 50, run_time = 1200)
+                             time.sleep(2)
+                             bot.set_uart_servo_angle( 5, 180, run_time = 900)
+                             time.sleep(1)
+                         #CONE IS ON///////////////////////////////////////////////////////////
+                             bot.set_uart_servo_angle( 6, 110, run_time = 1200)
+                             time.sleep(3)
+                             bot.set_uart_servo_angle( 2, 70, run_time = 1200)
+                             time.sleep(3)
+                             bot.set_uart_servo_angle( 3, 70, run_time = 1200)
+                             time.sleep(3)
+                             bot.set_uart_servo_angle( 1, 180, run_time = 1200) #making the turn
+                             time.sleep(3)
+                             bot.set_uart_servo_angle( 4, 10, run_time = 1200)
+                             time.sleep(3)
+                             bot.set_uart_servo_angle( 3, 25, run_time = 1200)
+                             time.sleep(3)
+                             bot.set_uart_servo_angle( 6, 170, run_time = 1200)
+                             time.sleep(3)
+                         #cone is dropped
+                             bot.set_uart_servo_angle( 1, 85, run_time = 1200)
+                             time.sleep(3)
+                             bot.set_uart_servo_angle( 3, 40, run_time = 1200)
+                             time.sleep(3)
+                             bot.set_uart_servo_angle( 4, 30, run_time = 1200)
+                             time.sleep(1 )
+                             print("arm is done")
+                         else:
+                             str_motora.smotor()
+                             sleep(3) #to cheak distance
+                             #del bot
+                                             
+                 #ultra3.ultra()
+                 #str_motora.smotor()
+                      #or till utlra sonic or object gets to tigger zone 
             print('all done next cone')#seems like a lag till it goes though all mb do like a clear buffer
         else:
             print('looking......')
