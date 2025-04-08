@@ -345,7 +345,7 @@ while True:
                     move_thread.join()
                     sensor_thread.join() #to exit end threding and do the PICK-UP
                     print("robot stopped. Deploying arm... ultra3.py")
-	# then stop to take a reading aka print value from sensor
+	        # then stop to take a reading aka print value from sensor
                     while flag == 1: #i change it back to 0 for urasonic sensor
                         dis = sensor.distance * 100
                         print('distance: {:.2f} cm'.format(dis))
