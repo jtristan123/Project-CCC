@@ -7,7 +7,7 @@ from Rosmaster_Lib import Rosmaster
 
 bot = Rosmaster()
 bot.create_receive_threading()
-sensor = DistanceSensor(echo=16,trigger=26)
+sensor = DistanceSensor(echo=24,trigger=23)#these are GPIO
 
 #def arm_servo(s_angle):
     #bot.set_uart_servo_angle(servo_id, s_angle, run_time)
@@ -17,7 +17,7 @@ try:
         dis = sensor.distance *100
         print('distance: {:.2f} cm'.format(dis))
         sleep(0.3)
-        if (dis < 7.8):
+        if (dis < 5):
             print("stop calling arm program")
 
             #bot.set_uart_servo_angle( 6, 170, run_time = 1200)
