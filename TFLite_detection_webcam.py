@@ -1,5 +1,5 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
-#V 4 with improved threading
+#V 5 from macbook
 # Author: Evan Juras
 # Date: 10/27/19 created by author
 # Being used by the CCC robot ece410
@@ -37,7 +37,7 @@ bot = Rosmaster()
 bot.create_receive_threading()
 #import ultra3
 #import TT_motora
-sensor = DistanceSensor(echo=16,trigger=26)
+sensor = DistanceSensor(echo=24,trigger=23)
 
 #sets the the webcam window to 896 x 504
 IM_WIDTH = 896
@@ -74,13 +74,15 @@ def move_forward():
     bot.set_car_motion(0, 0, 0)
     print('Movement stopped (obstacle or manual).')
 			
-def read_sensor(threshold=10):
+def read_sensor():
     global flag
+    flag = 1
+    print('enter sensor')
     while flag == 1:
         dis = sensor.distance * 100
         print('distance: {:.2f} cm'.format(dis))
         sleep(0.3)
-        if dis < threshold:
+        if dis < 5:
             print("Obstacle detected! Distance: {:.2f} cm".format(dis))
             stop_event.set()  # signal to stop the bot
             flag = 0
