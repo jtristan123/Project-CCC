@@ -63,8 +63,11 @@ def car_motion(V_x, V_y, V_z):
     return speed_x, speed_y, speed_z
 
 def move_forward():
-    print('MMMM going forward')
-    bot.set_car_motion(1, 0, 0)
+    print('MMMM going forward SLOW')
+    speed = 500
+    bot.set_motor(20,20,20,20) #this make it fo slower
+
+    #bot.set_car_motion(0.5, 0, 0)
     while not stop_event.is_set():
         sleep(0.1)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -81,8 +84,8 @@ def read_sensor():
     while flag == 1:
         dis = sensor.distance * 100
         print('distance: {:.2f} cm'.format(dis))
-        sleep(0.3)
-        if dis < 5:
+        sleep(0.1)
+        if dis < 8:
             print("Obstacle detected! Distance: {:.2f} cm".format(dis))
             stop_event.set()  # signal to stop the bot
             flag = 0
@@ -323,7 +326,7 @@ while True:
                     print('left diff: ',left_diff)  
                     #right wheels trun function
                     #left_motora.lmotor()
-                    bot.set_car_motion(0, 1, 0)  # Y axis positive (left wheels turn)
+                    bot.set_motor(-40,40,40,-40)# Y axis positive (left wheels turn)
                     #bot.set_car_motion(0,1,0)
                     sleep(0.5)
                     bot.set_car_motion(0,0,0)
@@ -333,7 +336,7 @@ while True:
                     print('right diff: ',right_diff)
                     #left wheels trun function
                     #right_motora.rmotor()
-                    bot.set_car_motion(0, -1, 0)  # Y axis positive (left wheels turn)
+                    bot.set_motor(40,-40,-40,40)# Y axis positive (left wheels turn)
                     #bot.set_car_motion(0,-1,0)
                     sleep(0.5)
                     bot.set_car_motion(0,0,0)
@@ -365,7 +368,7 @@ while True:
                    #  sleep(1)
                     # bot.set_car_motion(0,0,0)
                      #print('ultra3.py')
-                    while flag == 1: #i change it back to 0 for urasonic sensor
+                    while flag == 5: #i change it back to 0 for urasonic sensor
                          dis = sensor.distance *100
                          print('distance: {:.2f} cm'.format(dis))
                          sleep(0.3)
@@ -414,7 +417,8 @@ while True:
                              print("arm is done")
                          else:
                              str_motora.smotor()
-                             sleep(3) #to cheak distance
+                             sleep(3)
+                             print('u shounldnt see this')#to cheak distance
                              #del bot
                                              
                  #ultra3.ultra()
