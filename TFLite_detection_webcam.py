@@ -62,9 +62,24 @@ def car_motion(V_x, V_y, V_z):
     bot.set_car_motion(speed_x, speed_y, speed_z)
     return speed_x, speed_y, speed_z
 
+def strafe_left():
+    print("Strafing left...")
+    bot.set_motor(-40, 40, 40, -40)
+    while not stop_strafe_event.is_set():
+        sleep(0.1)
+    bot.set_motor(0, 0, 0, 0)
+    print("Stopped strafing left.")
+
+def strafe_right():
+    print("Strafing right...")
+    bot.set_motor(40, -40, -40, 40)
+    while not stop_strafe_event.is_set():
+        sleep(0.1)
+    bot.set_motor(0, 0, 0, 0)
+    print("Stopped strafing right.")
+
 def move_forward():
-    print('MMMM going forward SLOW')
-    speed = 500
+    print('MMMM Going forward SLOW')
     bot.set_motor(20,20,20,20) #this make it fo slower
 
     #bot.set_car_motion(0.5, 0, 0)
@@ -91,6 +106,7 @@ def read_sensor():
             flag = 0
 
 stop_event = threading.Event()
+stop_strafe_event = threading.Event() #if enters the PATH send single event
 
 class VideoStream:
     """Camera object that controls video streaming from the Picamera"""
