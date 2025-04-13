@@ -434,6 +434,8 @@ print("Shutting down all threads...")
 
 stop_event.set()
 stop_strafe_event.set()
+#i think i should add a stop_event_ultrasenor just to kill it in-case
+#I have for forward and left and right and cam 
 
 try:
     move_thread.join(timeout=1)
