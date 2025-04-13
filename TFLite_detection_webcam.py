@@ -1,5 +1,5 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
-#V 13 from macbook
+#V 14 from macbook
 # Author: Evan Juras
 # Date: 10/27/19 created by author
 # Being used by the CCC robot ece410
@@ -51,6 +51,7 @@ BR_path = (int(IM_WIDTH*.52),int(IM_HEIGHT*1))
 #TL_inside = (int(IM_WIDTH*0.1),int(IM_HEIGHT*0.35))
 #BR_inside = (int(IM_WIDTH*0.45),int(IM_HEIGHT-5))
 font = cv2.FONT_HERSHEY_SIMPLEX
+T = True
 # Define VideoStream class to handle streaming of video from webcam in separate processing thread
 # Source - Adrian Rosebrock, PyImageSearch: https://www.pyimagesearch.com/2015/12/28/increasing-raspberry-pi-fps-with-python-and-opencv/
 print("motion going")
@@ -251,10 +252,11 @@ videostream = VideoStream(resolution=(imW,imH),framerate=30).start()
 time.sleep(1)
 
 #for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
-while True:
+while T:
     flag = 0
     centered = False
     strafe_thread = None
+    cone_detected = False
 
     # Start timer (for calculating frame rate)
     while not centered: #added this <-------------------------------------------------------
@@ -288,7 +290,8 @@ while True:
         boxes = interpreter.get_tensor(output_details[boxes_idx]['index'])[0] # Bounding box coordinates of detected objects
         classes = interpreter.get_tensor(output_details[classes_idx]['index'])[0] # Class index of detected objects
         scores = interpreter.get_tensor(output_details[scores_idx]['index'])[0] # Confidence of detected objects
-
+        
+        cone_detected = False
         # Loop over all detections and draw detection box if confidence is above minimum threshold
         for i in range(1): #each frame it will perform these
         #for i in range(len(scores)):#find all the matching objects more than one
@@ -308,6 +311,7 @@ while True:
                 # Draw label
                 object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
                 if object_name == "cone": #only do this if cone is found
+                    cone_detected = True
                     if ymin < 250: #this is placeholder for the closest cone(perform pick-up )
                         cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (255, 10, 0), 2)
                         label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymin) # Example: 'person: 72%'
@@ -346,7 +350,7 @@ while True:
                         if strafe_thread is None or not strafe_thread.is_alive():
                             stop_strafe_event.clear()
                             strafe_thread = threading.Thread(target=strafe_right)
-                            rint('starting strafe_thread')
+                            print('starting strafe_thread')
                             strafe_thread.start()
                         #right wheels trun function
                         #left_motora.lmotor()
@@ -394,73 +398,18 @@ while True:
                         move_thread.join()
                         sensor_thread.join() #to exit end threding and do the PICK-UP
                         print("robot stopped. Deploying arm... ultra3.py")
-	        # then stop to take a reading aka print value from sensor
-                #else:
-                 #    print('MMMM going forward')
-                  #   bot.set_car_motion(1,0,0)
-                   #  sleep(1)
-                    # bot.set_car_motion(0,0,0)
-                     #print('ultra3.py')
-                    while flag == 5: #i change it back to 0 for urasonic sensor
-                         dis = sensor.distance *100
-                         print('distance: {:.2f} cm'.format(dis))
-                         sleep(0.3)
-                         #if cone in touchdwon zone stop and drop arm
-                         if (dis < 0):
-                             print("calling arm program")
-                             flag = 1;
-                         #bot.set_uart_servo_angle( 6, 170, run_time = 1200)
-                         #time.sleep(1)
-                         #bot.set_uart_servo_angle( 1, 85, run_time = 1200)
-                         #time.sleep(1)
-                         #bot.set_uart_servo_angle( 3, 40, run_time = 1200)
-                         #time.sleep(1)
-                         #bot.set_uart_servo_angle( 4, 30 , run_time = 1200)
-                         #time.sleep(2)
-                         #bot.set_uart_servo_angle( 2, 30, run_time = 1500)
-                             time.sleep(1)
-                             bot.set_uart_servo_angle( 2, 10, run_time = 1200)
-                             time.sleep(1)
-                             bot.set_uart_servo_angle( 4, 50, run_time = 1200)
-                             time.sleep(2)
-                             bot.set_uart_servo_angle( 5, 180, run_time = 900)
-                             time.sleep(1)
-                         #CONE IS ON///////////////////////////////////////////////////////////
-                             bot.set_uart_servo_angle( 6, 110, run_time = 1200)
-                             time.sleep(3)
-                             bot.set_uart_servo_angle( 2, 70, run_time = 1200)
-                             time.sleep(3)
-                             bot.set_uart_servo_angle( 3, 70, run_time = 1200)
-                             time.sleep(3)
-                             bot.set_uart_servo_angle( 1, 180, run_time = 1200) #making the turn
-                             time.sleep(3)
-                             bot.set_uart_servo_angle( 4, 10, run_time = 1200)
-                             time.sleep(3)
-                             bot.set_uart_servo_angle( 3, 25, run_time = 1200)
-                             time.sleep(3)
-                             bot.set_uart_servo_angle( 6, 170, run_time = 1200)
-                             time.sleep(3)
-                         #cone is dropped
-                             bot.set_uart_servo_angle( 1, 85, run_time = 1200)
-                             time.sleep(3)
-                             bot.set_uart_servo_angle( 3, 40, run_time = 1200)
-                             time.sleep(3)
-                             bot.set_uart_servo_angle( 4, 30, run_time = 1200)
-                             time.sleep(1 )
-                             print("arm is done")
-                         else:
-                             str_motora.smotor()
-                             sleep(3)
-                             print('u shounldnt see this')#to cheak distance
-                             #del bot
-                                             
-                 #ultra3.ultra()
-                 #str_motora.smotor()
-                      #or till utlra sonic or object gets to tigger zone 
-                print('all done next cone')#seems like a lag till it goes though all mb do like a clear buffer
+                        break
+        
+
             else:
                 print('looking......')
                 bot.set_car_motion(0,0,0)
+                if not cone_detected:
+                    stop_strafe_event.set()
+                    if strafe_thread is not None and strafe_thread.is_alive():
+                        strafe_thread.join()
+                centered = False  # Go back to hunting
+
 
         print('imshow here')
         # Draw framerate in corner of frame
@@ -476,9 +425,30 @@ while True:
 
         # Press 'q' to quit
         if cv2.waitKey(1) == ord('q'):
+            print("exiting....")
+            T = False
             break #this breaks the while true: exits while loop
 
 # Clean up
+print("Shutting down all threads...")
+
+stop_event.set()
+stop_strafe_event.set()
+
+try:
+    move_thread.join(timeout=1)
+except:
+    pass
+
+try:
+    sensor_thread.join(timeout=1)
+except:
+    pass
+
+try:
+    strafe_thread.join(timeout=1)
+except:
+    pass
 cv2.destroyAllWindows()
 videostream.stop()
 del bot
