@@ -1,5 +1,5 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
-#V 7 from macbook
+#V 13 from macbook
 # Author: Evan Juras
 # Date: 10/27/19 created by author
 # Being used by the CCC robot ece410
@@ -64,7 +64,7 @@ def car_motion(V_x, V_y, V_z):
 
 def strafe_left():
     print("Strafing left...")
-    bot.set_motor(-40, 40, 40, -40)
+    bot.set_motor(40, -40, -40, 40)
     while not stop_strafe_event.is_set():
         sleep(0.1)
     bot.set_motor(0, 0, 0, 0)
@@ -72,7 +72,7 @@ def strafe_left():
 
 def strafe_right():
     print("Strafing right...")
-    bot.set_motor(40, -40, -40, 40)
+    bot.set_motor(-40, 40, 40, -40)
     while not stop_strafe_event.is_set():
         sleep(0.1)
     bot.set_motor(0, 0, 0, 0)
@@ -257,142 +257,143 @@ while True:
     strafe_thread = None
 
     # Start timer (for calculating frame rate)
-    t1 = cv2.getTickCount()
-while not centered: #added this <-------------------------------------------------------
-    # Grab frame from video stream
-    frame1 = videostream.read()
+    while not centered: #added this <-------------------------------------------------------
+        t1 = cv2.getTickCount()
 
-    # Acquire frame and resize to expected shape [1xHxWx3]
-    frame = frame1.copy()
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame_resized = cv2.resize(frame_rgb, (width, height))
-    input_data = np.expand_dims(frame_resized, axis=0)
-    
-    #line divides the frame and draws boxes path and touch zone
-    cv2.rectangle(frame,TL_path,BR_path,(225,0,255),3)
-    cv2.putText(frame," ",(TL_inside[0]+10,TL_inside[1]-10),font,1,(225,0,255),3,cv2.LINE_AA)
-    #touch zone the frame cones needs to be to get arm down
-    cv2.rectangle(frame,TL_inside,BR_inside,(20,20,255),3)
-    cv2.putText(frame,"touch zone",(TL_inside[0]+10,TL_inside[1]-10),font,1,(20,255,255),3,cv2.LINE_AA)
+        # Grab frame from video stream
+        frame1 = videostream.read()
 
-    # Normalize pixel values if using a floating model (i.e. if model is non-quantized)
-    if floating_model:
-        input_data = (np.float32(input_data) - input_mean) / input_std
+        # Acquire frame and resize to expected shape [1xHxWx3]
+        frame = frame1.copy()
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_resized = cv2.resize(frame_rgb, (width, height))
+        input_data = np.expand_dims(frame_resized, axis=0)
+        
+        #line divides the frame and draws boxes path and touch zone
+        cv2.rectangle(frame,TL_path,BR_path,(225,0,255),3)
+        cv2.putText(frame," ",(TL_inside[0]+10,TL_inside[1]-10),font,1,(225,0,255),3,cv2.LINE_AA)
+        #touch zone the frame cones needs to be to get arm down
+        cv2.rectangle(frame,TL_inside,BR_inside,(20,20,255),3)
+        cv2.putText(frame,"touch zone",(TL_inside[0]+10,TL_inside[1]-10),font,1,(20,255,255),3,cv2.LINE_AA)
 
-    # Perform the actual detection by running the model with the image as input
-    interpreter.set_tensor(input_details[0]['index'],input_data)
-    interpreter.invoke()
+        # Normalize pixel values if using a floating model (i.e. if model is non-quantized)
+        if floating_model:
+            input_data = (np.float32(input_data) - input_mean) / input_std
 
-    # Retrieve detection results
-    boxes = interpreter.get_tensor(output_details[boxes_idx]['index'])[0] # Bounding box coordinates of detected objects
-    classes = interpreter.get_tensor(output_details[classes_idx]['index'])[0] # Class index of detected objects
-    scores = interpreter.get_tensor(output_details[scores_idx]['index'])[0] # Confidence of detected objects
+        # Perform the actual detection by running the model with the image as input
+        interpreter.set_tensor(input_details[0]['index'],input_data)
+        interpreter.invoke()
 
-    # Loop over all detections and draw detection box if confidence is above minimum threshold
-    for i in range(2): #each frame it will perform these
-    #for i in range(len(scores)):#find all the matching objects more than one
-        if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
+        # Retrieve detection results
+        boxes = interpreter.get_tensor(output_details[boxes_idx]['index'])[0] # Bounding box coordinates of detected objects
+        classes = interpreter.get_tensor(output_details[classes_idx]['index'])[0] # Class index of detected objects
+        scores = interpreter.get_tensor(output_details[scores_idx]['index'])[0] # Confidence of detected objects
 
-            # Get bounding box coordinates and draw box
-            # Interpreter can return coordinates that are outside of image dimensions, 
-            # need to force them to be within image using max() and min()
-            ymin = int(max(1,(boxes[i][0] * imH)))
-            xmin = int(max(1,(boxes[i][1] * imW)))
-            ymax = int(min(imH,(boxes[i][2] * imH)))
-            xmax = int(min(imW,(boxes[i][3] * imW)))
-            
-            #width = int((min(imW,(boxes[i][3] * imW))) - (max(1,(boxes[i][1] * imW))))
-            
+        # Loop over all detections and draw detection box if confidence is above minimum threshold
+        for i in range(1): #each frame it will perform these
+        #for i in range(len(scores)):#find all the matching objects more than one
+            if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
 
-            # Draw label
-            object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
-            if object_name == "cone": #only do this if cone is found
-                if ymin < 250: #this is placeholder for the closest cone(perform pick-up )
-                    cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (255, 10, 0), 2)
-                    label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymin) # Example: 'person: 72%'
-                    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
-                    label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
-                    cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
-                    cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text 
-                else: #placeholder to the rest behind (do nothing)
-                    cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2) #this is the squares around the cones
-                    label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymax - ymin) # Example: 'person: 72%'
-                    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
-                    label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
-                    cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
-                    cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text   
-    
-    	    #PERFORM PICK-UP, this part will drive up to closest clone and pick-up
-    	    #PERFORM PICK-UP, this part will drive up to closest clone and pick-up
-                print('i see something!')
-		    # i think it wounld be better to make a caluctue on how far it is from the middle of PATH
-		    # half the dis and that how long to run the motors then update with
-		    # updated frame untill its in the middle of the PATH, in each if statement
-		    # i think it wounld be better to make a caluctue on how far it is from the middle of PATH
-		    # half the dis and that how long to run the motors then update with
-		    # updated frame untill its in the middle of the PATH, in each if statement
-            #print(ymin,' ',xmin,' ',ymax,' ',xmax)
-                x = int(((xmin+xmax)/2))
-                y = int(((ymin+ymax)/2))
-                cv2.circle(frame,(x,y), 5, (75,13,180), -1)
+                # Get bounding box coordinates and draw box
+                # Interpreter can return coordinates that are outside of image dimensions, 
+                # need to force them to be within image using max() and min()
+                ymin = int(max(1,(boxes[i][0] * imH)))
+                xmin = int(max(1,(boxes[i][1] * imW)))
+                ymax = int(min(imH,(boxes[i][2] * imH)))
+                xmax = int(min(imW,(boxes[i][3] * imW)))
+                
+                #width = int((min(imW,(boxes[i][3] * imW))) - (max(1,(boxes[i][1] * imW))))
+                
 
-                left_diff = int(TL_path[0] - x) 
-                print(x,' ',y)
-                if (x < TL_path[0]):
-                    print('LLLLLL turning right wheels')
+                # Draw label
+                object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
+                if object_name == "cone": #only do this if cone is found
+                    if ymin < 250: #this is placeholder for the closest cone(perform pick-up )
+                        cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (255, 10, 0), 2)
+                        label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymin) # Example: 'person: 72%'
+                        labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
+                        label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
+                        cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
+                        cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text 
+                    else: #placeholder to the rest behind (do nothing)
+                        cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2) #this is the squares around the cones
+                        label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymax - ymin) # Example: 'person: 72%'
+                        labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
+                        label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
+                        cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
+                        cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text   
+        
+                #PERFORM PICK-UP, this part will drive up to closest clone and pick-up
+                #PERFORM PICK-UP, this part will drive up to closest clone and pick-up
+                    print('i see something!')
+                # i think it wounld be better to make a caluctue on how far it is from the middle of PATH
+                # half the dis and that how long to run the motors then update with
+                # updated frame untill its in the middle of the PATH, in each if statement
+                # i think it wounld be better to make a caluctue on how far it is from the middle of PATH
+                # half the dis and that how long to run the motors then update with
+                # updated frame untill its in the middle of the PATH, in each if statement
+                #print(ymin,' ',xmin,' ',ymax,' ',xmax)
+                    x = int(((xmin+xmax)/2))
+                    y = int(((ymin+ymax)/2))
+                    cv2.circle(frame,(x,y), 5, (75,13,180), -1)
+
                     left_diff = int(TL_path[0] - x) 
-                    print('left diff: ',left_diff)
-                    if strafe_thread is None or not strafe_thread.is_alive():
-            		stop_strafe_event.clear()
-            		strafe_thread = threading.Thread(target=strafe_right)
-			print('starting strafe_thread')
-            		strafe_thread.start()
-                    #right wheels trun function
-                    #left_motora.lmotor()
-                    ##bot.set_motor(-40,40,40,-40)# Y axis positive (left wheels turn)
-                    #bot.set_car_motion(0,1,0)
-                    ##sleep(0.5)
-                    ##bot.set_car_motion(0,0,0)
-                elif (x > BR_path[0]):
-                    print('RRR turning left wheels')
-                    right_diff = int(x - BR_path[0])
-                    print('right diff: ',right_diff)
-		    if strafe_thread is None or not strafe_thread.is_alive():
-            		stop_strafe_event.clear()
-            		strafe_thread = threading.Thread(target=strafe_left)
-			print('starting strafe_thread')
-            		strafe_thread.start()
-                    #left wheels trun function
-                    #right_motora.rmotor()
-                    ##bot.set_motor(40,-40,-40,40)# Y axis positive (left wheels turn)
-                    #bot.set_car_motion(0,-1,0)
-                    ##sleep(0.5)
-                    ##bot.set_car_motion(0,0,0)
-            #this portion is for having a red square "arm-drop" zone, if you want to use it
-            #elif ((x > TL_inside[0]) and (x < BR_inside[0]) and (y > TL_inside[1]) and (y < BR_inside[1])):
-                #print('touch down, drop arm ready')
-                #print(BR_inside,' ',TL_inside)
-            #this is to test each motor with a duration, its for debugging 
-                #time1 = input('enter time1:\n')
-                #time2 = input('enter time2:\n')
-                #tt_motora.motor(time1,time2)
-                elif (TL_path[0] <= x <= BR_path[0]):
-	#we may have to do a threding and have moving forward and sensor run at the same time
-                    stop_strafe_event.set()
-		    if strafe_thread is not None:
-			    strafe_thread.join()
-		    centered = True
-	#_________________________________________________________________
-		    print('Cone lined up! Moving forward...')
+                    print(x,' ',y)
+                    if (x < TL_path[0]):
+                        print('LLLLLL turning right wheels')
+                        left_diff = int(TL_path[0] - x) 
+                        print('left diff: ',left_diff)
+                        if strafe_thread is None or not strafe_thread.is_alive():
+                            stop_strafe_event.clear()
+                            strafe_thread = threading.Thread(target=strafe_right)
+                            rint('starting strafe_thread')
+                            strafe_thread.start()
+                        #right wheels trun function
+                        #left_motora.lmotor()
+                        ##bot.set_motor(-40,40,40,-40)# Y axis positive (left wheels turn)
+                        #bot.set_car_motion(0,1,0)
+                        ##sleep(0.5)
+                        ##bot.set_car_motion(0,0,0)
+                    elif (x > BR_path[0]):
+                        print('RRR turning left wheels')
+                        right_diff = int(x - BR_path[0])
+                        print('right diff: ',right_diff)
+                        if strafe_thread is None or not strafe_thread.is_alive():
+                            stop_strafe_event.clear()
+                            strafe_thread = threading.Thread(target=strafe_left)
+                            print('starting strafe_thread')
+                            strafe_thread.start()
+                        #left wheels trun function
+                        #right_motora.rmotor()
+                        ##bot.set_motor(40,-40,-40,40)# Y axis positive (left wheels turn)
+                        #bot.set_car_motion(0,-1,0)
+                        ##sleep(0.5)
+                        ##bot.set_car_motion(0,0,0)
+                #this portion is for having a red square "arm-drop" zone, if you want to use it
+                #elif ((x > TL_inside[0]) and (x < BR_inside[0]) and (y > TL_inside[1]) and (y < BR_inside[1])):
+                    #print('touch down, drop arm ready')
+                    #print(BR_inside,' ',TL_inside)
+                #this is to test each motor with a duration, its for debugging 
+                    #time1 = input('enter time1:\n')
+                    #time2 = input('enter time2:\n')
+                    #tt_motora.motor(time1,time2)
+                    elif (TL_path[0] <= x <= BR_path[0]):
+        #we may have to do a threding and have moving forward and sensor run at the same time
+                        stop_strafe_event.set()
+                        if strafe_thread is not None:
+                            strafe_thread.join()
+                            centered = True
+        #_________________________________________________________________
+                        print('Cone lined up! Moving forward...')
             # Start threads
-                    stop_event.clear()  # Make sure event is cleared before starting
-                    move_thread = threading.Thread(target=move_forward)
-                    sensor_thread = threading.Thread(target=read_sensor)
-                    move_thread.start()
-                    sensor_thread.start()
-                    move_thread.join()
-                    sensor_thread.join() #to exit end threding and do the PICK-UP
-                    print("robot stopped. Deploying arm... ultra3.py")
+                        stop_event.clear()  # Make sure event is cleared before starting
+                        move_thread = threading.Thread(target=move_forward)
+                        sensor_thread = threading.Thread(target=read_sensor)
+                        move_thread.start()
+                        sensor_thread.start()
+                        move_thread.join()
+                        sensor_thread.join() #to exit end threding and do the PICK-UP
+                        print("robot stopped. Deploying arm... ultra3.py")
 	        # then stop to take a reading aka print value from sensor
                 #else:
                  #    print('MMMM going forward')
@@ -456,25 +457,26 @@ while not centered: #added this <-----------------------------------------------
                  #ultra3.ultra()
                  #str_motora.smotor()
                       #or till utlra sonic or object gets to tigger zone 
-            print('all done next cone')#seems like a lag till it goes though all mb do like a clear buffer
-        else:
-            print('looking......')
-            bot.set_car_motion(0,0,0)
- 
-    # Draw framerate in corner of frame
-    cv2.putText(frame,'FPS: {0:.2f}'.format(frame_rate_calc),(30,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0),2,cv2.LINE_AA)
+                print('all done next cone')#seems like a lag till it goes though all mb do like a clear buffer
+            else:
+                print('looking......')
+                bot.set_car_motion(0,0,0)
 
-    # All the results have been drawn on the frame, so it's time to display it.
-    cv2.imshow('Object detector', frame)
+        print('imshow here')
+        # Draw framerate in corner of frame
+        cv2.putText(frame,'FPS: {0:.2f}'.format(frame_rate_calc),(30,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0),2,cv2.LINE_AA)
 
-    # Calculate framerate
-    t2 = cv2.getTickCount()
-    time1 = (t2-t1)/freq
-    frame_rate_calc= 1/time1
+            # All the results have been drawn on the frame, so it's time to display it.
+        cv2.imshow('Object detector', frame)
 
-    # Press 'q' to quit
-    if cv2.waitKey(1) == ord('q'):
-        break #this breaks the while true: exits while loop
+            # Calculate framerate
+        t2 = cv2.getTickCount()
+        time1 = (t2-t1)/freq
+        frame_rate_calc= 1/time1
+
+        # Press 'q' to quit
+        if cv2.waitKey(1) == ord('q'):
+            break #this breaks the while true: exits while loop
 
 # Clean up
 cv2.destroyAllWindows()
