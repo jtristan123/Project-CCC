@@ -253,10 +253,12 @@ time.sleep(1)
 #for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
 while True:
     flag = 0
+    centered = False
+    strafe_thread = None
 
     # Start timer (for calculating frame rate)
     t1 = cv2.getTickCount()
-
+while not centered: #added this <-------------------------------------------------------
     # Grab frame from video stream
     frame1 = videostream.read()
 
@@ -339,23 +341,33 @@ while True:
                 if (x < TL_path[0]):
                     print('LLLLLL turning right wheels')
                     left_diff = int(TL_path[0] - x) 
-                    print('left diff: ',left_diff)  
+                    print('left diff: ',left_diff)
+                    if strafe_thread is None or not strafe_thread.is_alive():
+            		stop_strafe_event.clear()
+            		strafe_thread = threading.Thread(target=strafe_right)
+			print('starting strafe_thread')
+            		strafe_thread.start()
                     #right wheels trun function
                     #left_motora.lmotor()
-                    bot.set_motor(-40,40,40,-40)# Y axis positive (left wheels turn)
+                    ##bot.set_motor(-40,40,40,-40)# Y axis positive (left wheels turn)
                     #bot.set_car_motion(0,1,0)
-                    sleep(0.5)
-                    bot.set_car_motion(0,0,0)
+                    ##sleep(0.5)
+                    ##bot.set_car_motion(0,0,0)
                 elif (x > BR_path[0]):
                     print('RRR turning left wheels')
                     right_diff = int(x - BR_path[0])
                     print('right diff: ',right_diff)
+		    if strafe_thread is None or not strafe_thread.is_alive():
+            		stop_strafe_event.clear()
+            		strafe_thread = threading.Thread(target=strafe_left)
+			print('starting strafe_thread')
+            		strafe_thread.start()
                     #left wheels trun function
                     #right_motora.rmotor()
-                    bot.set_motor(40,-40,-40,40)# Y axis positive (left wheels turn)
+                    ##bot.set_motor(40,-40,-40,40)# Y axis positive (left wheels turn)
                     #bot.set_car_motion(0,-1,0)
-                    sleep(0.5)
-                    bot.set_car_motion(0,0,0)
+                    ##sleep(0.5)
+                    ##bot.set_car_motion(0,0,0)
             #this portion is for having a red square "arm-drop" zone, if you want to use it
             #elif ((x > TL_inside[0]) and (x < BR_inside[0]) and (y > TL_inside[1]) and (y < BR_inside[1])):
                 #print('touch down, drop arm ready')
@@ -365,9 +377,13 @@ while True:
                 #time2 = input('enter time2:\n')
                 #tt_motora.motor(time1,time2)
                 elif (TL_path[0] <= x <= BR_path[0]):
-	#i think we should have uratsonic sensor here aswell, turn on sensor and start to take readings 
 	#we may have to do a threding and have moving forward and sensor run at the same time
-                    print('Cone lined up! Moving forward...')
+                    stop_strafe_event.set()
+		    if strafe_thread is not None:
+			    strafe_thread.join()
+		    centered = True
+	#_________________________________________________________________
+		    print('Cone lined up! Moving forward...')
             # Start threads
                     stop_event.clear()  # Make sure event is cleared before starting
                     move_thread = threading.Thread(target=move_forward)
