@@ -80,7 +80,9 @@ def strafe_left():
     #bot.set_motor(40, -40, -40, 40)
     bot.set_car_motion(-0.2,0,0)
     while not stop_strafe_event.is_set():
-        sleep(0.1)
+        m1, m2, m3, m4 = bot.get_motor_endcoder()
+	print(f"[Encoders] M1={m1}, M2={m2}, M3={m3}, M4={m4}")
+	sleep(0.1)
     #bot.set_motor(0, 0, 0, 0)
     bot.set_car_motion(0,0,0)
     print("Stopped strafing left.")
@@ -90,6 +92,8 @@ def strafe_right():
     #bot.set_motor(-40, 40, 40, -40)
     bot.set_car_motion(0.2,0,0)
     while not stop_strafe_event.is_set():
+	m1, m2, m3, m4 = bot.get_motor_endcoder()
+	print(f"[Encoders] M1={m1}, M2={m2}, M3={m3}, M4={m4}")
         sleep(0.1)
     #bot.set_motor(0, 0, 0, 0)
     bot.set_car_motion(0,0,0)
