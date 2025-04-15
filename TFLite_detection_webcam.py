@@ -38,6 +38,8 @@ bot = Rosmaster()
 bot.create_receive_threading()
 pid_values = bot.get_motion_pid()
 print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
+print("Current PID:", bot.get_motion_pid())
+
 # Create bot object
 bot = Rosmaster()
 bot.create_receive_threading()
@@ -45,6 +47,7 @@ bot.create_receive_threading()
 #Set initial PID parameters
 #bot.set_pid_param(kp=1.0, ki=0.5, kd=0.1, forever=False) #tune these later
 #print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
+#print("Current PID:", bot.get_motion_pid())
 
 sensor = DistanceSensor(echo=24,trigger=23)
 
