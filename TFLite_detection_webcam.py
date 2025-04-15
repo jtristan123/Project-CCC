@@ -40,14 +40,11 @@ pid_values = bot.get_motion_pid()
 print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
 print("Current PID:", bot.get_motion_pid())
 
-# Create bot object
-bot = Rosmaster()
-bot.create_receive_threading()
 
 #Set initial PID parameters
-#bot.set_pid_param(kp=1.0, ki=0.5, kd=0.1, forever=False) #tune these later
-#print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
-#print("Current PID:", bot.get_motion_pid())
+bot.set_pid_param(kp=0.8, ki=0.01, kd=0.7, forever=False) #tune these later
+print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
+print("Current PID:", bot.get_motion_pid())
 
 sensor = DistanceSensor(echo=24,trigger=23)
 
@@ -64,6 +61,7 @@ BR_path = (int(IM_WIDTH*.52),int(IM_HEIGHT*1))
 #BR_inside = (int(IM_WIDTH*0.45),int(IM_HEIGHT-5))
 font = cv2.FONT_HERSHEY_SIMPLEX
 T = True
+is_strafing = False
 # Define VideoStream class to handle streaming of video from webcam in separate processing thread
 # Source - Adrian Rosebrock, PyImageSearch: https://www.pyimagesearch.com/2015/12/28/increasing-raspberry-pi-fps-with-python-and-opencv/
 print("motion going")
@@ -78,11 +76,13 @@ def car_motion(V_x, V_y, V_z):
 def strafe_left():
     print("Strafing left...")
     #bot.set_motor(40, -40, -40, 40)
-    bot.set_car_motion(-0.2,0,0)
+    bot.set_car_motion(0,-0.005,0)
     while not stop_strafe_event.is_set():
+        vx, vy, vz = bot.get_motion_data()
+        print("Actual motion:", vx, vy, vz)
         #m1, m2, m3, m4 = bot.get_motor_endcoder()
 	#print(f"[Encoders] M1={m1}, M2={m2}, M3={m3}, M4={m4}")
-	sleep(0.1)
+        sleep(0.1)
     #bot.set_motor(0, 0, 0, 0)
     bot.set_car_motion(0,0,0)
     print("Stopped strafing left.")
@@ -90,7 +90,7 @@ def strafe_left():
 def strafe_right():
     print("Strafing right...")
     #bot.set_motor(-40, 40, 40, -40)
-    bot.set_car_motion(0.2,0,0)
+    bot.set_car_motion(0,0.005,0)
     while not stop_strafe_event.is_set():
 	#m1, m2, m3, m4 = bot.get_motor_endcoder()
 	#print(f"[Encoders] M1={m1}, M2={m2}, M3={m3}, M4={m4}")
