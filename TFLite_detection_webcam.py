@@ -413,7 +413,7 @@ while T:
                         sensor_thread.start()
                         move_thread.join()
                         sensor_thread.join() #to exit end threding and do the PICK-UP
-                        print("robot stopped. Deploying arm... ultra3.py")
+                        print("robot stopped. Deploying arm...")
                         break
         
 
