@@ -1,6 +1,7 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
-#V 14 from macbook
-# Author: Evan Juras
+#V 15 from macbook
+#Code based from Evan Juras Turotior
+#Other fearutes are by Josue Tristan 
 # Date: 10/27/19 created by author
 # Being used by the CCC robot ece410
 # Description: 
@@ -35,8 +36,16 @@ from Rosmaster_Lib import Rosmaster
 #creates the bot object
 bot = Rosmaster()
 bot.create_receive_threading()
-#import ultra3
-#import TT_motora
+pid_values = bot.get_motion_pid()
+print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
+# Create bot object
+bot = Rosmaster()
+bot.create_receive_threading()
+
+#Set initial PID parameters
+#bot.set_pid_param(kp=1.0, ki=0.5, kd=0.1, forever=False) #tune these later
+#print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
+
 sensor = DistanceSensor(echo=24,trigger=23)
 
 #sets the the webcam window to 896 x 504
@@ -65,18 +74,22 @@ def car_motion(V_x, V_y, V_z):
 
 def strafe_left():
     print("Strafing left...")
-    bot.set_motor(40, -40, -40, 40)
+    #bot.set_motor(40, -40, -40, 40)
+    bot.set_car_motion(-0.2,0,0)
     while not stop_strafe_event.is_set():
         sleep(0.1)
-    bot.set_motor(0, 0, 0, 0)
+    #bot.set_motor(0, 0, 0, 0)
+    bot.set_car_motion(0,0,0)
     print("Stopped strafing left.")
 
 def strafe_right():
     print("Strafing right...")
-    bot.set_motor(-40, 40, 40, -40)
+    #bot.set_motor(-40, 40, 40, -40)
+    bot.set_car_motion(0.2,0,0)
     while not stop_strafe_event.is_set():
         sleep(0.1)
-    bot.set_motor(0, 0, 0, 0)
+    #bot.set_motor(0, 0, 0, 0)
+    bot.set_car_motion(0,0,0)
     print("Stopped strafing right.")
 
 def move_forward():
