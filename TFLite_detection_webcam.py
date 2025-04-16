@@ -38,7 +38,7 @@ bot = Rosmaster()
 bot.create_receive_threading()
 pid_values = bot.get_motion_pid()
 print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
-#it shounld be kp = 0.2 ki = 0.0 kd = 4.0
+#it shounld be kp = 0.2 ki = 0.0 kd = 4.0 by defult 
 #but on the video its 0.5 0.1 0.3 
 print("Current PID:", bot.get_motion_pid())
 
