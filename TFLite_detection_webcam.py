@@ -1,5 +1,5 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
-#V 15 from macbook
+#V 16 from macbook testing tailscale 
 #Code based from Evan Juras Turotior
 #Other fearutes are by Josue Tristan 
 # Date: 10/27/19 created by author
@@ -76,7 +76,7 @@ def car_motion(V_x, V_y, V_z):
 def strafe_left():
     print("Strafing left...")
     #bot.set_motor(40, -40, -40, 40)
-    bot.set_car_motion(0,-0.005,0)
+    bot.set_car_motion(0,-1,0)
     while not stop_strafe_event.is_set():
         vx, vy, vz = bot.get_motion_data()
         print("Actual motion:", vx, vy, vz)
@@ -90,7 +90,7 @@ def strafe_left():
 def strafe_right():
     print("Strafing right...")
     #bot.set_motor(-40, 40, 40, -40)
-    bot.set_car_motion(0,0.005,0)
+    bot.set_car_motion(0,0.01,0)
     while not stop_strafe_event.is_set():
 	#m1, m2, m3, m4 = bot.get_motor_endcoder()
 	#print(f"[Encoders] M1={m1}, M2={m2}, M3={m3}, M4={m4}")
@@ -367,11 +367,18 @@ while T:
                         print('LLLLLL turning right wheels')
                         left_diff = int(TL_path[0] - x) 
                         print('left diff: ',left_diff)
-                        if strafe_thread is None or not strafe_thread.is_alive():
+                        #if strafe_thread is None or not strafe_thread.is_alive():
+                            #stop_strafe_event.clear()
+                            #strafe_thread = threading.Thread(target=strafe_right)
+                            #print('starting strafe_thread')
+                            #strafe_thread.start()
+                        if not is_strafing:
                             stop_strafe_event.clear()
-                            strafe_thread = threading.Thread(target=strafe_right)
-                            print('starting strafe_thread')
+                            strafe_thread = threading.Thread(target=strafe_right)  # or strafe_left
+                            is_strafing = True
+                            print("starting strafe_thread")
                             strafe_thread.start()
+
                         #right wheels trun function
                         #left_motora.lmotor()
                         ##bot.set_motor(-40,40,40,-40)# Y axis positive (left wheels turn)
