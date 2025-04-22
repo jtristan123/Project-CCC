@@ -77,8 +77,8 @@ def car_motion(V_x, V_y, V_z):
 
 def strafe_left():
     print("Strafing left...")
-    #bot.set_motor(40, -40, -40, 40)
-    bot.set_car_motion(0,-0.07,0)
+    bot.set_motor(40, -40, -40, 40)
+    #bot.set_car_motion(0,-0.07,0)
     while not stop_strafe_event.is_set():
         vx, vy, vz = bot.get_motion_data()
         print("Actual motion:", vx, vy, vz)
@@ -91,8 +91,8 @@ def strafe_left():
 
 def strafe_right():
     print("Strafing right...")
-    #bot.set_motor(-40, 40, 40, -40)
-    bot.set_car_motion(0,0.07,0)
+    bot.set_motor(-40, 40, 40, -40)
+    #bot.set_car_motion(0,0.07,0)
     while not stop_strafe_event.is_set():
 	#m1, m2, m3, m4 = bot.get_motor_endcoder()
 	#print(f"[Encoders] M1={m1}, M2={m2}, M3={m3}, M4={m4}")
