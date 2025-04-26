@@ -58,8 +58,8 @@ IM_HEIGHT = 504
 TL_inside = (int(IM_WIDTH*.4),int(IM_HEIGHT*.70))
 BR_inside = (int(IM_WIDTH*.6),int(IM_HEIGHT*.9))
 #path for stright
-TL_path = (int(IM_WIDTH*.45),int(IM_HEIGHT*0))
-BR_path = (int(IM_WIDTH*.47),int(IM_HEIGHT*1))
+TL_path = (int(IM_WIDTH*.45),int(IM_HEIGHT*0)) #move the LEFT line of path
+BR_path = (int(IM_WIDTH*.47),int(IM_HEIGHT*1)) #move the RIGHT line of path
 #TL_inside = (int(IM_WIDTH*0.1),int(IM_HEIGHT*0.35))
 #BR_inside = (int(IM_WIDTH*0.45),int(IM_HEIGHT-5))
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -110,10 +110,10 @@ def strafe_left():
         # pick power level
         if abs_err > 100:
             power = 40     # full speed
-        elif abs_err > 40:
-            power = 30     # medium
+        elif abs_err > 50:
+            power = 35     # medium
         else:
-            power = 30     # fine adjust
+            power = 31     # fine adjust
 
         # strafe left: (power, -power, -power, power)
         bot.set_motor(power, -power, -power, power)
