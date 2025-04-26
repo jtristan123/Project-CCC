@@ -145,12 +145,18 @@ def move_forward():
     bot.set_motor(20,20,20,20) #this make it fo slower
 
     #bot.set_car_motion(0.5, 0, 0)
-    while not stop_event.is_set():
-        sleep(0.1)
+    while not (stop_event.is_set() or quit_event.is_set()):
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            print('Manual stop triggered.')
+            bot.set_motor(0,0,0,0)
+            final_dist = sensor.distance * 100
             stop_event.set()
+            stop_strafe_event.set()
             break
+        sleep(0.1)
+        #if cv2.waitKey(1) & 0xFF == ord('q'):
+        #    print('Manual stop triggered.')
+        #    stop_event.set()
+        #    break
     bot.set_car_motion(0, 0, 0)
     print('Movement stopped (obstacle or manual).')
 			
@@ -159,6 +165,13 @@ def read_sensor():
     flag = 1
     print('enter sensor')
     while flag == 1:
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            print("q pressed stop everything")
+            stop_event.set()
+            stop_strafe_event.set()
+            flag = 0
+            break
+        
         dis = sensor.distance * 100
         print('distance: {:.2f} cm'.format(dis))
         sleep(0.1)
@@ -166,10 +179,13 @@ def read_sensor():
             print("Obstacle detected! Distance: {:.2f} cm".format(dis))
             stop_event.set()  # signal to stop the bot
             flag = 0
+            break
+        sleep(0.1)
+    print('read sensor exiting')
 
 stop_event = threading.Event()
 stop_strafe_event = threading.Event() #if enters the PATH send single event
-
+quit_event = threading.Event()
 class VideoStream:
     """Camera object that controls video streaming from the Picamera"""
     def __init__(self,resolution=(640,480),framerate=30):
@@ -312,6 +328,17 @@ freq = cv2.getTickFrequency()
 videostream = VideoStream(resolution=(imW,imH),framerate=30).start()
 time.sleep(1)
 
+# give the camera a moment to auto-expose and adjust
+#warmup_secs = 3
+#detect_after = time.time() + warmup_secs
+#print(f"Camera buffering… detection will start in {warmup_secs}s")
+
+# after starting the stream…
+#for _ in range(10):
+#    _ = videostream.read()
+#    time.sleep(0.1)   # small pause between reads
+#print("Camera warmed up, starting main loop.")
+
 #for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
 while T:
     flag = 0
@@ -324,10 +351,10 @@ while T:
         t1 = cv2.getTickCount()
 
         # Grab frame from video stream
-        frame1 = videostream.read()
+        frame = videostream.read()
 
         # Acquire frame and resize to expected shape [1xHxWx3]
-        frame = frame1.copy()
+        frame = frame.copy()
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame_resized = cv2.resize(frame_rgb, (width, height))
         input_data = np.expand_dims(frame_resized, axis=0)
@@ -492,10 +519,13 @@ while T:
         t2 = cv2.getTickCount()
         time1 = (t2-t1)/freq
         frame_rate_calc= 1/time1
-
+        Key = cv2.waitKey(1) & 0xFF
         # Press 'q' to quit
-        if cv2.waitKey(1) == ord('q'):
+        if Key == ord('q'):
             print("exiting....")
+            stop_event.set()
+            quit_event.set()
+            stop_strafe_event.set()
             T = False
             break #this breaks the while true: exits while loop
 
