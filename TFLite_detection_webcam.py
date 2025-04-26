@@ -43,6 +43,7 @@ print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values
 print("Current PID:", bot.get_motion_pid())
 
 
+
 #Set initial PID parameters
 bot.set_pid_param(kp=0.8, ki=0.01, kd=0.7, forever=False) #tune these later
 print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
@@ -57,8 +58,8 @@ IM_HEIGHT = 504
 TL_inside = (int(IM_WIDTH*.4),int(IM_HEIGHT*.70))
 BR_inside = (int(IM_WIDTH*.6),int(IM_HEIGHT*.9))
 #path for stright
-TL_path = (int(IM_WIDTH*.48),int(IM_HEIGHT*0))
-BR_path = (int(IM_WIDTH*.52),int(IM_HEIGHT*1))
+TL_path = (int(IM_WIDTH*.45),int(IM_HEIGHT*0))
+BR_path = (int(IM_WIDTH*.47),int(IM_HEIGHT*1))
 #TL_inside = (int(IM_WIDTH*0.1),int(IM_HEIGHT*0.35))
 #BR_inside = (int(IM_WIDTH*0.45),int(IM_HEIGHT-5))
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -66,6 +67,10 @@ T = True
 is_strafing = False
 # Define VideoStream class to handle streaming of video from webcam in separate processing thread
 # Source - Adrian Rosebrock, PyImageSearch: https://www.pyimagesearch.com/2015/12/28/increasing-raspberry-pi-fps-with-python-and-opencv/
+# shared state for threading
+current_x = None
+frame_center = (TL_path[0] + BR_path[0]) // 2
+
 print("motion going")
 
 def car_motion(V_x, V_y, V_z):
@@ -75,23 +80,57 @@ def car_motion(V_x, V_y, V_z):
     bot.set_car_motion(speed_x, speed_y, speed_z)
     return speed_x, speed_y, speed_z
 
+# def strafe_left():
+#     print("Strafing left...")
+#     bot.set_motor(35, -35, -35, 35)
+#     #bot.set_car_motion(0,-0.07,0)
+#     while not stop_strafe_event.is_set():
+#         vx, vy, vz = bot.get_motion_data()
+#         print("Actual motion:", vx, vy, vz)
+#         #m1, m2, m3, m4 = bot.get_motor_endcoder()
+# 	#print(f"[Encoders] M1={m1}, M2={m2}, M3={m3}, M4={m4}")
+#         sleep(0.1)
+#     bot.set_motor(0, 0, 0, 0)
+#     #bot.set_car_motion(0,0,0)
+#     print("Stopped strafing left.")
+
 def strafe_left():
-    print("Strafing left...")
-    bot.set_motor(40, -40, -40, 40)
-    #bot.set_car_motion(0,-0.07,0)
+    global current_x, frame_center
+    print("Strafing left (dynamic)…")
     while not stop_strafe_event.is_set():
+        if current_x is None:
+            # haven’t seen a cone yet
+            sleep(0.1)
+            continue
+
+        # compute how far right-of-center we are
+        error = current_x - frame_center  
+        abs_err = abs(error)
+
+        # pick power level
+        if abs_err > 100:
+            power = 40     # full speed
+        elif abs_err > 40:
+            power = 30     # medium
+        else:
+            power = 30     # fine adjust
+
+        # strafe left: (power, -power, -power, power)
+        bot.set_motor(power, -power, -power, power)
+
+        # debug info
         vx, vy, vz = bot.get_motion_data()
-        print("Actual motion:", vx, vy, vz)
-        #m1, m2, m3, m4 = bot.get_motor_endcoder()
-	#print(f"[Encoders] M1={m1}, M2={m2}, M3={m3}, M4={m4}")
+        print(f"[Strafe L] error={error}  power={power}  motion={vx:.1f},{vy:.1f},{vz:.1f}")
+
         sleep(0.1)
-    #bot.set_motor(0, 0, 0, 0)
-    bot.set_car_motion(0,0,0)
+
+    # once told to stop:
+    bot.set_motor(0, 0, 0, 0)
     print("Stopped strafing left.")
 
 def strafe_right():
     print("Strafing right...")
-    bot.set_motor(-40, 40, 40, -40)
+    bot.set_motor(-35, 35, 35, -35)
     #bot.set_car_motion(0,0.07,0)
     while not stop_strafe_event.is_set():
 	#m1, m2, m3, m4 = bot.get_motor_endcoder()
@@ -360,6 +399,8 @@ while T:
                 # updated frame untill its in the middle of the PATH, in each if statement
                 #print(ymin,' ',xmin,' ',ymax,' ',xmax)
                     x = int(((xmin+xmax)/2))
+                    current_x = x
+
                     y = int(((ymin+ymax)/2))
                     cv2.circle(frame,(x,y), 5, (75,13,180), -1)
 

@@ -18,13 +18,13 @@ car_type = bot.get_car_type_from_machine()
 print("Detected Car Type:", car_type)
  
 while True:
-    print("\nStart test 9")
+    print("\nStart test 10")
     print("Starting slowest strafing (0.02)...")
 
     # Store encoder values BEFORE motion
     m1_start, m2_start, m3_start, m4_start = bot.get_motor_encoder()
     print("Before strafe: ", m1_start, m2_start, m3_start, m4_start)
-    bot.set_motor(50, -50, -49, 49)  # strafe left raw PWM
+    bot.set_motor(50, -50, -50, 50)  # strafe left raw PWM
 
     #bot.set_car_motion(0, 0.35, 0)
     time.sleep(5)
