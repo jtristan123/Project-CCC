@@ -1,5 +1,5 @@
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
-#made changes testing pychram
+#made changes testing pychra
 #V 17 from macbook testing tailscale 
 #Code based from Evan Juras Turotior
 #Other fearutes are by Josue Tristan 
