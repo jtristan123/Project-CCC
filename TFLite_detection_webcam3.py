@@ -2,7 +2,7 @@
 #made changes testing pychra
 #testing with codespaces
 #using fleet
-#V 17 from macbook testing tailscale 
+#V 18 from macbook testing tailscale 
 #Code based from Evan Juras Turotior
 #Other fearutes are by Josue Tristan 
 # Date: 10/27/19 created by author
