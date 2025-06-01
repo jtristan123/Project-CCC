@@ -588,6 +588,9 @@ try:
     strafe_thread.join(timeout=1)
 except:
     pass
+    
+# Close the video stream and destroy all OpenCV windows
+sensor.close()
 cv2.destroyAllWindows()
 videostream.stop()
 del bot
