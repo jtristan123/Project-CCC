@@ -183,7 +183,11 @@ def read_sensor():
     print('enter sensor')
 
     while flag == 1 and not quit_event.is_set():
+        print("[THREAD] Reading distance...")
+
         dis = sensor.distance * 100
+        print("[THREAD] Distance:", dis)
+
         print('distance: {:.2f} cm'.format(dis))
 
         if dis < 8:
@@ -227,15 +231,20 @@ class VideoStream:
 
     def __init__(self, resolution=(640, 480), framerate=30):
         # 1) Create and configure Picamera2
+        print("[CAMERA] Initializing Picamera2...")
         self.picam2 = Picamera2()
+        print("[CAMERA] Setting config...")
         self.picam2.preview_configuration.main.size = resolution
         self.picam2.preview_configuration.main.format = "RGB888"
+        print("[CAMERA] Configuring preview...")
         self.picam2.configure("preview")
+        print("[CAMERA] Starting camera...")
         self.picam2.start()
 
         # 2) Read first frame to initialize
+        print("[CAMERA] Capturing first frame...")
         self.frame = self.picam2.capture_array()
-
+        print("[CAMERA] First frame captured.")
         # 3) Control variable to stop the thread
         self.stopped = False
 
@@ -329,13 +338,25 @@ if labels[0] == '???':
 # Load the Tensorflow Lite model.
 # If using Edge TPU, use special load_delegate argument
 if use_TPU:
-    interpreter = Interpreter(model_path=PATH_TO_CKPT,
-                              experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
-    print(PATH_TO_CKPT)
+    print("[MODEL] Loading model...")
+    print("[DEBUG] Model path:", PATH_TO_CKPT)
+    try:
+        print("[DEBUG] Attempting to load Edge TPU delegate...")
+        #interpreter = Interpreter(model_path=PATH_TO_CKPT)
+        interpreter = Interpreter(model_path=PATH_TO_CKPT,
+                              experimental_delegates=[load_delegate('libedgetpu.so.1')])
+        print("[DEBUG] Interpreter successfully created.")
+
+        print(PATH_TO_CKPT)
+    except Exception as e:
+        print("[ERROR] Interpreter creation failed:", e)
+
 else:
     interpreter = Interpreter(model_path=PATH_TO_CKPT)
+print("[MODEL] Allocating tensors...")
 
 interpreter.allocate_tensors()
+print("[MODEL] Model ready.")
 
 # Get model details
 input_details = interpreter.get_input_details()
@@ -388,10 +409,14 @@ while T:
         t1 = cv2.getTickCount()
 
         # Grab frame from video stream
+        print("[FRAME] Reading frame...")
         frame = videostream.read()
+        print("[FRAME] Frame read.")
 
         # Acquire frame and resize to expected shape [1xHxWx3]
+        print("[FRAME] Copying frame...")
         frame = frame.copy()
+        print("[FRAME] Copy done.")
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame_resized = cv2.resize(frame_rgb, (width, height))
         input_data = np.expand_dims(frame_resized, axis=0)
@@ -408,8 +433,14 @@ while T:
             input_data = (np.float32(input_data) - input_mean) / input_std
 
         # Perform the actual detection by running the model with the image as input
+        print("[INFER] Preparing input...")
+
         interpreter.set_tensor(input_details[0]['index'],input_data)
+        print("[INFER] Running interpreter...")
+
         interpreter.invoke()
+        print("[INFER] Inference done.")
+
 
         # Retrieve detection results
         boxes = interpreter.get_tensor(output_details[boxes_idx]['index'])[0] # Bounding box coordinates of detected objects
