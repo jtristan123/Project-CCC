@@ -33,7 +33,6 @@ import importlib.util
 import right_motora
 import left_motora
 import str_motora
-from gpiozero import DistanceSensor
 from Rosmaster_Lib import Rosmaster
 from gpiozero.pins.pigpio import PiGPIOFactory
 

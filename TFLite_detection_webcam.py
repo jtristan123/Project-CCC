@@ -30,8 +30,13 @@ import importlib.util
 import right_motora
 import left_motora
 import str_motora
-from gpiozero import DistanceSensor
 from Rosmaster_Lib import Rosmaster
+from gpiozero.pins.pigpio import PiGPIOFactory
+from gpiozero import DistanceSensor
+
+factory = PiGPIOFactory()
+sensor = DistanceSensor(echo=24, trigger=23, pin_factory=factory)
+
 
 #creates the bot object
 bot = Rosmaster()
@@ -49,7 +54,7 @@ bot.set_pid_param(kp=0.8, ki=0.01, kd=0.7, forever=False) #tune these later
 print(f"Current PID values: KP={pid_values[0]} KI={pid_values[1]} KD={pid_values[2]}")
 print("Current PID:", bot.get_motion_pid())
 
-sensor = DistanceSensor(echo=24,trigger=23)
+#sensor = DistanceSensor(echo=24,trigger=23)
 
 #sets the the webcam window to 896 x 504
 IM_WIDTH = 896

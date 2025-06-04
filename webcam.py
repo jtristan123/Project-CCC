@@ -33,7 +33,7 @@ import str_motora
 import ctypes
 #from gpiozero import DistanceSensor
 from Rosmaster_Lib import Rosmaster
-from picamera2 import Picamera2
+#from picamera2 import Picamera2
 
 from gpiozero import DistanceSensor
 from gpiozero.pins.pigpio import PiGPIOFactory
@@ -236,50 +236,38 @@ stop_strafe_event = threading.Event() #if enters the PATH send single event
 quit_event = threading.Event()
 
 class VideoStream:
-    """Camera object that controls video streaming from the Pi Camera (CSI) using Picamera2."""
+    """Camera object that controls video streaming."""
 
     def __init__(self, resolution=(640, 480), framerate=30):
-        # 1) Create and configure Picamera2
-        print("[CAMERA] Initializing Picamera2...")
-        self.picam2 = Picamera2()
-        print("[CAMERA] Setting config...")
-        self.picam2.preview_configuration.main.size = resolution
-        self.picam2.preview_configuration.main.format = "RGB888"
-        print("[CAMERA] Configuring preview...")
-        self.picam2.configure("preview")
-        print("[CAMERA] Starting camera...")
-        self.picam2.start()
-
-        # 2) Read first frame to initialize
-        print("[CAMERA] Capturing first frame...")
-        self.frame = self.picam2.capture_array()
-        print("[CAMERA] First frame captured.")
-        # 3) Control variable to stop the thread
+        self.cap = cv2.VideoCapture(0)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
         self.stopped = False
+        self.frame = None
+        self._read_once()
+
+    def _read_once(self):
+        ret, frame = self.cap.read()
+        if ret:
+            self.frame = frame
 
     def start(self):
-        # Start background thread to read frames continuously
+        from threading import Thread
         Thread(target=self.update, args=(), daemon=True).start()
         return self
 
     def update(self):
-        # Continuously capture frames until stopped
         while not self.stopped:
-            try:
-                self.frame = self.picam2.capture_array()
-            except Exception:
-                # In rare cases capture_array() might fail; skip this iteration
-                sleep(0.01)
-                continue
+            ret, frame = self.cap.read()
+            if ret:
+                self.frame = frame
 
     def read(self):
-        # Return the most recently captured frame
         return self.frame
 
     def stop(self):
-        # Signal the thread to stop, then close the camera
         self.stopped = True
-        self.picam2.stop()
+        self.cap.release()
 
 # Define and parse input arguments
 parser = argparse.ArgumentParser()
@@ -301,7 +289,7 @@ args = parser.parse_args()
 MODEL_NAME = args.modeldir
 GRAPH_NAME = args.graph
 LABELMAP_NAME = args.labels
-min_conf_threshold = float(.99)#(args.threshold)
+min_conf_threshold = float(.5)#(args.threshold)
 resW, resH = args.resolution.split('x')
 imW, imH = int(resW), int(resH)
 use_TPU = args.edgetpu
