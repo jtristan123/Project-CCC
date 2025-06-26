@@ -146,16 +146,50 @@ def strafe_left():
     print("Stopped strafing left.")
 
 def strafe_right():
-    print("Strafing right...")
-    bot.set_motor(-35, 35, 35, -35)
-    #bot.set_car_motion(0,0.07,0)
+    global current_x, frame_center
+    print("Strafing right (dynamic)…")
     while not stop_strafe_event.is_set():
+        if current_x is None:
+            # haven’t seen a cone yet
+            sleep(0.1)
+            continue
+
+        # compute how far right-of-center we are
+        error = current_x - frame_center  
+        abs_err = abs(error)
+
+        # pick power level
+        if abs_err > 100:
+            power = 40     # full speed
+        elif abs_err > 50:
+            power = 35     # medium
+        else:
+            power = 31     # fine adjust
+
+        # strafe left: (power, -power, -power, power)
+        bot.set_motor(-power, power, power, -power)
+
+        # debug info
+        vx, vy, vz = bot.get_motion_data()
+        print(f"[Strafe R] error={error}  power={power}  motion={vx:.1f},{vy:.1f},{vz:.1f}")
+
+        sleep(0.1)
+
+
+
+
+
+#def strafe_right():
+ #   print("Strafing right...")
+ #  bot.set_motor(-35, 35, 35, -35)
+    #bot.set_car_motion(0,0.07,0)
+    #while not stop_strafe_event.is_set():
 	#m1, m2, m3, m4 = bot.get_motor_endcoder()
 	#print(f"[Encoders] M1={m1}, M2={m2}, M3={m3}, M4={m4}")
-        sleep(0.1)
+#        sleep(0.1)
     #bot.set_motor(0, 0, 0, 0)
-    bot.set_car_motion(0,0,0)
-    print("Stopped strafing right.")
+#    bot.set_car_motion(0,0,0)
+#    print("Stopped strafing right.")
 
 def move_forward():
     print('MMMM Going forward SLOW')
@@ -406,14 +440,14 @@ while T:
         t1 = cv2.getTickCount()
 
         # Grab frame from video stream
-        print("[FRAME] Reading frame...")
+        #print("[FRAME] Reading frame...")
         frame = videostream.read()
-        print("[FRAME] Frame read.")
+        #print("[FRAME] Frame read.")
 
         # Acquire frame and resize to expected shape [1xHxWx3]
-        print("[FRAME] Copying frame...")
+        #print("[FRAME] Copying frame...")
         frame = frame.copy()
-        print("[FRAME] Copy done.")
+        #print("[FRAME] Copy done.")
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame_resized = cv2.resize(frame_rgb, (width, height))
         input_data = np.expand_dims(frame_resized, axis=0)
@@ -430,13 +464,13 @@ while T:
             input_data = (np.float32(input_data) - input_mean) / input_std
 
         # Perform the actual detection by running the model with the image as input
-        print("[INFER] Preparing input...")
+        #print("[INFER] Preparing input...")
 
         interpreter.set_tensor(input_details[0]['index'],input_data)
-        print("[INFER] Running interpreter...")
+        #print("[INFER] Running interpreter...")
 
         interpreter.invoke()
-        print("[INFER] Inference done.")
+        #print("[INFER] Inference done.")
 
 
         # Retrieve detection results
@@ -498,28 +532,22 @@ while T:
 
                     left_diff = int(TL_path[0] - x) 
                     print(x,' ',y)
+                    
                     if (x < TL_path[0]):
                         print('LLLLLL turning right wheels')
                         left_diff = int(TL_path[0] - x) 
                         print('left diff: ',left_diff)
+                        if strafe_thread is None or not strafe_thread.is_alive():
+                            stop_strafe_event.clear()
+                            strafe_thread = threading.Thread(target=strafe_right)
+                            print('starting strafe_thread')
+                            strafe_thread.start()
                         #if strafe_thread is None or not strafe_thread.is_alive():
                             #stop_strafe_event.clear()
                             #strafe_thread = threading.Thread(target=strafe_right)
                             #print('starting strafe_thread')
                             #strafe_thread.start()
-                        if not is_strafing:
-                            stop_strafe_event.clear()
-                            strafe_thread = threading.Thread(target=strafe_right)  # or strafe_left
-                            is_strafing = True
-                            print("starting strafe_thread")
-                            strafe_thread.start()
 
-                        #right wheels trun function
-                        #left_motora.lmotor()
-                        ##bot.set_motor(-40,40,40,-40)# Y axis positive (left wheels turn)
-                        #bot.set_car_motion(0,1,0)
-                        ##sleep(0.5)
-                        ##bot.set_car_motion(0,0,0)
                     elif (x > BR_path[0]):
                         print('RRR turning left wheels')
                         right_diff = int(x - BR_path[0])
