@@ -1,4 +1,4 @@
-# PROJECT Car Collecting Cone (3C)
+# Project Car Collecting Cone (3C)
 this is the python code we used for the CCC
 All code shounld be save in the raspberry pi and ready to be used, use this a viewer
 <p align="center">
