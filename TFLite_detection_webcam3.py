@@ -397,7 +397,7 @@ while T:
         # Loop over all detections and draw detection box if confidence is above minimum threshold
         #print(f"Class ID: {int(classes[i])}, Score: {scores[i]:.2f}")
 
-        for i in range(1): #each frame it will perform these
+        for i in range(3): #each frame it will perform these
         #for i in range(len(scores)):#find all the matching objects more than one
             print(f"[DEBUG] i={i}, score={scores[i]:.2f}, class={int(classes[i])}")
 
@@ -430,6 +430,7 @@ while T:
 
                 # Draw label
                 object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
+                
                 if object_name == "cone": #only do this if cone is found
                     cone_detected = True
                     if ymin < 250: #this is placeholder for the closest cone(perform pick-up )
@@ -446,6 +447,7 @@ while T:
                         label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
                         cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
                         cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text   
+                    
                     print(f"[DEBUG] label: {label}")
 
                     label_text = f'{label} {int(scores[i] * 100)}%'
