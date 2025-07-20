@@ -323,7 +323,7 @@ args = parser.parse_args()
 MODEL_NAME = args.modeldir
 GRAPH_NAME = args.graph
 LABELMAP_NAME = args.labels
-min_conf_threshold = float(.5)#(args.threshold)
+min_conf_threshold = float(.4)#(args.threshold)
 resW, resH = args.resolution.split('x')
 imW, imH = int(resW), int(resH)
 use_TPU = args.edgetpu
@@ -479,8 +479,12 @@ while T:
         scores = interpreter.get_tensor(output_details[scores_idx]['index'])[0] # Confidence of detected objects
         
         cone_detected = False
+        closest_center_x = 0
+        closest_center_y = 0
+        max_mid_y = -1
+        closest_box = None
         # Loop over all detections and draw detection box if confidence is above minimum threshold
-        for i in range(1): #each frame it will perform these
+        for i in range(2): #each frame it will perform these
         #for i in range(len(scores)):#find all the matching objects more than one
             if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
 
@@ -491,72 +495,70 @@ while T:
                 xmin = int(max(1,(boxes[i][1] * imW)))
                 ymax = int(min(imH,(boxes[i][2] * imH)))
                 xmax = int(min(imW,(boxes[i][3] * imW)))
-                
-                #width = int((min(imW,(boxes[i][3] * imW))) - (max(1,(boxes[i][1] * imW))))
-                
+                x_mid = int(((xmin+xmax)/2))
+                current_x = x_mid
 
+                y_mid = int(((ymin+ymax)/2))
+                
                 # Draw label
                 object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
                 if object_name == "cone": #only do this if cone is found
                     cone_detected = True
-                    if ymin < 250: #this is placeholder for the closest cone(perform pick-up )
-                        cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (255, 10, 0), 2)
-                        label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymin) # Example: 'person: 72%'
-                        labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
-                        label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
-                        cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
-                        cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text 
-                    else: #placeholder to the rest behind (do nothing)
-                        cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2) #this is the squares around the cones
-                        label = '%s: %d%% % d' % (object_name, int(scores[i]*100),ymax - ymin) # Example: 'person: 72%'
-                        labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
-                        label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
-                        cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
-                        cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text   
+                    #if ymin < 250: #this is placeholder for the closest cone(perform pick-up )
+                    cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 1)
+                    label = '%s: %d%% % d' % (object_name, int(scores[i]*100),y_mid) # Example: 'person: 72%'
+                    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
+                    label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
+                    cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
+                    cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text 
+                    #else: #placeholder to the rest behind (do nothing)
+                    #    cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2) #this is the squares around the cones
+                    #    label = '%s: %d%% % d' % (object_name, int(scores[i]*100),y_mid) # Example: 'person: 72%'
+                    #    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
+                    #    label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
+                    #    cv2.rectangle(frame, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
+                    #    cv2.putText(frame, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text   
         
-                #PERFORM PICK-UP, this part will drive up to closest clone and pick-up
-                #PERFORM PICK-UP, this part will drive up to closest clone and pick-up
-                    print('i see something!')
-                # i think it wounld be better to make a caluctue on how far it is from the middle of PATH
-                # half the dis and that how long to run the motors then update with
-                # updated frame untill its in the middle of the PATH, in each if statement
-                # i think it wounld be better to make a caluctue on how far it is from the middle of PATH
-                # half the dis and that how long to run the motors then update with
-                # updated frame untill its in the middle of the PATH, in each if statement
-                #print(ymin,' ',xmin,' ',ymax,' ',xmax)
-                    x = int(((xmin+xmax)/2))
-                    current_x = x
+                    print('i see something3!')
+                    cv2.circle(frame,(x_mid,y_mid), 5, (75,13,180), -1)
 
-                    y = int(((ymin+ymax)/2))
-                    cv2.circle(frame,(x,y), 5, (75,13,180), -1)
+                    if y_mid > max_mid_y:
+                        max_mid_y = y_mid
+                        closest_center_x = x_mid
+                        closest_center_y = y_mid
+                        closest_box = (xmin, ymin, xmax, ymax)
+                
+        if cone_detected:
+            print('FINAL CLOSEST: x_mid:', closest_center_x, ' y_mid:', closest_center_y)
 
-                    left_diff = int(TL_path[0] - x) 
-                    print(x,' ',y)
+
+    #--------------------------------------------------------------------------------------------------------------- 
+                    #if (closest_center_x < TL_path[0]):
+                    #    print('LLLLLL turning right wheels')
+                    #    left_diff = int(TL_path[0] - closest_center_x) 
+                    #    print('left diff: ',left_diff)
+                    #    if strafe_thread is None or not strafe_thread.is_alive():
+                    #        stop_strafe_event.clear()
+                    #        strafe_thread = threading.Thread(target=strafe_right)
+                    #        print('starting strafe_thread')
+                    #        strafe_thread.start()
                     
-                    if (x < TL_path[0]):
-                        print('LLLLLL turning right wheels')
-                        left_diff = int(TL_path[0] - x) 
-                        print('left diff: ',left_diff)
-                        if strafe_thread is None or not strafe_thread.is_alive():
-                            stop_strafe_event.clear()
-                            strafe_thread = threading.Thread(target=strafe_right)
-                            print('starting strafe_thread')
-                            strafe_thread.start()
                         #if strafe_thread is None or not strafe_thread.is_alive():
                             #stop_strafe_event.clear()
                             #strafe_thread = threading.Thread(target=strafe_right)
                             #print('starting strafe_thread')
                             #strafe_thread.start()
 
-                    elif (x > BR_path[0]):
-                        print('RRR turning left wheels')
-                        right_diff = int(x - BR_path[0])
-                        print('right diff: ',right_diff)
-                        if strafe_thread is None or not strafe_thread.is_alive():
-                            stop_strafe_event.clear()
-                            strafe_thread = threading.Thread(target=strafe_left)
-                            print('starting strafe_thread')
-                            strafe_thread.start()
+                    #elif (x > BR_path[0]):
+                    #    print('RRR turning left wheels')
+                    #    right_diff = int(x - BR_path[0])
+                    #    print('right diff: ',right_diff)
+                    #    if strafe_thread is None or not strafe_thread.is_alive():
+                    #        stop_strafe_event.clear()
+                    #        strafe_thread = threading.Thread(target=strafe_left)
+                    #        print('starting strafe_thread')
+                    #        strafe_thread.start()
+                    
                         #left wheels trun function
                         #right_motora.rmotor()
                         ##bot.set_motor(40,-40,-40,40)# Y axis positive (left wheels turn)
@@ -571,27 +573,27 @@ while T:
                     #time1 = input('enter time1:\n')
                     #time2 = input('enter time2:\n')
                     #tt_motora.motor(time1,time2)
-                    elif (TL_path[0] <= x <= BR_path[0]):
-        #we may have to do a threding and have moving forward and sensor run at the same time
-                        stop_strafe_event.set()
-                        if strafe_thread is not None:
-                            strafe_thread.join()
-                            centered = True
+                    
+                    #elif (TL_path[0] <= x <= BR_path[0]):
+                    #    stop_strafe_event.set()
+                    #    if strafe_thread is not None:
+                    #        strafe_thread.join()
+                    #        centered = True
         #_________________________________________________________________
-                        print('Cone lined up! Moving forward...')
+            print('Cone lined up! Moving forward...')
             # Start threads
-                        stop_event.clear()  # Make sure event is cleared before starting
-                        move_thread = threading.Thread(target=move_forward)
-                        sensor_thread = threading.Thread(target=read_sensor)
-                        move_thread.start()
-                        sensor_thread.start()
-                        move_thread.join()
-                        sensor_thread.join() #to exit end threding and do the PICK-UP
-                        print("robot stopped. Deploying arm...")
-                        break
+                    #    stop_event.clear()  # Make sure event is cleared before starting
+                    #    move_thread = threading.Thread(target=move_forward)
+                    #    sensor_thread = threading.Thread(target=read_sensor)
+                    #    move_thread.start()
+                    #    sensor_thread.start()
+                    #    move_thread.join()
+                    #    sensor_thread.join() #to exit end threding and do the PICK-UP
+            print("robot stopped. Deploying arm...")
+                    #break
         
 
-            else:
+        else:
                 print('looking......')
                 bot.set_car_motion(0,0,0)
                 if not cone_detected:
