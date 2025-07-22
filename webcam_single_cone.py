@@ -484,7 +484,7 @@ while T:
         max_mid_y = -1
         closest_box = None
         # Loop over all detections and draw detection box if confidence is above minimum threshold
-        for i in range(2): #each frame it will perform these
+        for i in range(3): #each frame it will perform these
         #for i in range(len(scores)):#find all the matching objects more than one
             if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
 
@@ -533,15 +533,16 @@ while T:
 
 
     #--------------------------------------------------------------------------------------------------------------- 
-                    #if (closest_center_x < TL_path[0]):
-                    #    print('LLLLLL turning right wheels')
+            if (closest_center_x < TL_path[0]):
+                print('<-- going left <--')
+                print(closest_center_x, ' < ', TL_path[0])
                     #    left_diff = int(TL_path[0] - closest_center_x) 
                     #    print('left diff: ',left_diff)
-                    #    if strafe_thread is None or not strafe_thread.is_alive():
-                    #        stop_strafe_event.clear()
-                    #        strafe_thread = threading.Thread(target=strafe_right)
-                    #        print('starting strafe_thread')
-                    #        strafe_thread.start()
+                if strafe_thread is None or not strafe_thread.is_alive():
+                    stop_strafe_event.clear()
+                    strafe_thread = threading.Thread(target=strafe_right)
+                    print('--> starting strafe_thread -->')
+                    strafe_thread.start()
                     
                         #if strafe_thread is None or not strafe_thread.is_alive():
                             #stop_strafe_event.clear()
@@ -549,15 +550,17 @@ while T:
                             #print('starting strafe_thread')
                             #strafe_thread.start()
 
-                    #elif (x > BR_path[0]):
-                    #    print('RRR turning left wheels')
+            elif (closest_center_x > BR_path[0]):
+                print('--> going right -->')
+                print(closest_center_x, ' > ', BR_path[0])
+
                     #    right_diff = int(x - BR_path[0])
                     #    print('right diff: ',right_diff)
-                    #    if strafe_thread is None or not strafe_thread.is_alive():
-                    #        stop_strafe_event.clear()
-                    #        strafe_thread = threading.Thread(target=strafe_left)
-                    #        print('starting strafe_thread')
-                    #        strafe_thread.start()
+                if strafe_thread is None or not strafe_thread.is_alive():
+                    stop_strafe_event.clear()
+                    strafe_thread = threading.Thread(target=strafe_left)
+                    print('<-- starting strafe_thread <--')
+                    strafe_thread.start()
                     
                         #left wheels trun function
                         #right_motora.rmotor()
@@ -574,22 +577,26 @@ while T:
                     #time2 = input('enter time2:\n')
                     #tt_motora.motor(time1,time2)
                     
-                    #elif (TL_path[0] <= x <= BR_path[0]):
-                    #    stop_strafe_event.set()
-                    #    if strafe_thread is not None:
-                    #        strafe_thread.join()
-                    #        centered = True
+            elif (TL_path[0] <= closest_center_x <= BR_path[0]):
+                print('Cone lined up! Moving forward...')
+                print(closest_center_x, ' is between ', TL_path[0], ' and ', BR_path[0])
+
+
+                stop_strafe_event.set()
+                if strafe_thread is not None:
+                    strafe_thread.join()
+                    centered = True
         #_________________________________________________________________
-            print('Cone lined up! Moving forward...')
+
             # Start threads
-                    #    stop_event.clear()  # Make sure event is cleared before starting
-                    #    move_thread = threading.Thread(target=move_forward)
-                    #    sensor_thread = threading.Thread(target=read_sensor)
-                    #    move_thread.start()
-                    #    sensor_thread.start()
-                    #    move_thread.join()
-                    #    sensor_thread.join() #to exit end threding and do the PICK-UP
-            print("robot stopped. Deploying arm...")
+                    stop_event.clear()  # Make sure event is cleared before starting
+                    move_thread = threading.Thread(target=move_forward)
+                    sensor_thread = threading.Thread(target=read_sensor)
+                    move_thread.start()
+                    sensor_thread.start()
+                    move_thread.join()
+                    sensor_thread.join() #to exit end threding and do the PICK-UP
+                    print("robot stopped. Deploying arm...")
                     #break
         
 
