@@ -456,8 +456,8 @@ while T:
         cv2.rectangle(frame,TL_path,BR_path,(225,0,255),3)
         cv2.putText(frame," ",(TL_inside[0]+10,TL_inside[1]-10),font,1,(225,0,255),3,cv2.LINE_AA)
         #touch zone the frame cones needs to be to get arm down
-        cv2.rectangle(frame,TL_inside,BR_inside,(20,20,255),3)
-        cv2.putText(frame,"touch zone",(TL_inside[0]+10,TL_inside[1]-10),font,1,(20,255,255),3,cv2.LINE_AA)
+        #cv2.rectangle(frame,TL_inside,BR_inside,(20,20,255),3)
+        #cv2.putText(frame,"touch zone",(TL_inside[0]+10,TL_inside[1]-10),font,1,(20,255,255),3,cv2.LINE_AA)
 
         # Normalize pixel values if using a floating model (i.e. if model is non-quantized)
         if floating_model:
@@ -628,7 +628,7 @@ while T:
             stop_event.set()
             quit_event.set()
             stop_strafe_event.set()
-	    bot.set_motor(0, 0, 0, 0)  #stop wheels in case
+            bot.set_motor(0, 0, 0, 0)  #stop wheels in case
             T = False
             break #this breaks the while true: exits while loop
 
