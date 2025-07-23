@@ -636,6 +636,8 @@ print("Shutting down all threads...")
 
 stop_event.set()
 stop_strafe_event.set()
+bot.set_motor(0, 0, 0, 0)  #stop wheels in case
+
 #i think i should add a stop_event_ultrasenor just to kill it in-case
 #I have for forward and left and right and cam 
 
