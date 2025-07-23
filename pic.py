@@ -6,8 +6,8 @@ save_dir = "captured_images"
 os.makedirs(save_dir, exist_ok=True)
 
 cam = cv2.VideoCapture(0)  # USB webcam
-cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+cam.set(cv2.CAP_PROP_FRAME_WIDTH, 896)
+cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 504)
 
 img_count = 0
 print("Press SPACE to capture image, ESC to exit.")
