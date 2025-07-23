@@ -192,7 +192,7 @@ def strafe_right():
 #    print("Stopped strafing right.")
 
 def move_forward():
-    print('MMMM Going forward SLOW')
+    print(' |^| Going Forward SLOW |^|')
     bot.set_motor(20, 20, 20, 20)  # slow forward motion
 
     while not (stop_event.is_set() or quit_event.is_set()):
@@ -223,7 +223,7 @@ def move_forward():
 def read_sensor():
     global flag
     flag = 1
-    print('enter sensor')
+    print('entering sensor')
 
     while flag == 1 and not quit_event.is_set():
         print("[THREAD] Reading distance...")
@@ -235,6 +235,7 @@ def read_sensor():
 
         if dis < 8:
             print("Obstacle detected! Distance: {:.2f} cm".format(dis))
+            #if needed ill add a function for robot to wait
             stop_event.set()  # signal to stop the bot
             flag = 0
             break
@@ -581,14 +582,12 @@ while T:
                 print('Cone lined up! Moving forward...')
                 print(closest_center_x, ' is between ', TL_path[0], ' and ', BR_path[0])
 
-
+            #stop strafing if it was happening
                 stop_strafe_event.set()
                 if strafe_thread is not None:
                     strafe_thread.join()
                     centered = True
-        #_________________________________________________________________
-
-            # Start threads
+            # Start threads for moving forward and reading sensor
                     stop_event.clear()  # Make sure event is cleared before starting
                     move_thread = threading.Thread(target=move_forward)
                     sensor_thread = threading.Thread(target=read_sensor)
@@ -597,6 +596,8 @@ while T:
                     move_thread.join()
                     sensor_thread.join() #to exit end threding and do the PICK-UP
                     print("robot stopped. Deploying arm...")
+                    #add ROBOT_ARM function here
+                    #wait till robot arm is done
                     #break
         
 
@@ -610,7 +611,7 @@ while T:
                 centered = False  # Go back to hunting
 
 
-        print('imshow here')
+        #print('imshow here')
         # Draw framerate in corner of frame
         cv2.putText(frame,'FPS: {0:.2f}'.format(frame_rate_calc),(30,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0),2,cv2.LINE_AA)
 
