@@ -1,0 +1,31 @@
+# Ignore simulation outputs
+sim_build/
+results.xml
+
+# Ignore backup or cache files
+*.vcd
+*.log
+*.pyc
+__pycache__/
+
+# Ignore Python venv
+venv/
+tflite-venv/
+.venvpython9/
+images/
+split-data/
+*.env
+exported-model/
+testingstuff/
+
+# Ignore Cocotb-generated .vvp
+*.vvp
+
+# Ignore Git-specific backups or temporary edits
+*.swp
+*.bak
+*.deb
+*.run
+
+*epochs/
+
