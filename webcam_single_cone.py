@@ -495,7 +495,7 @@ while T:
                 xmin = int(max(1,(boxes[i][1] * imW)))
                 ymax = int(min(imH,(boxes[i][2] * imH)))
                 xmax = int(min(imW,(boxes[i][3] * imW)))
-                x_mid = int(((xmin+xmax)/2))
+                x_mid = int(((xmin+xmax)/2)- ((xmax - xmin) * 0.1))
                 current_x = x_mid
 
                 y_mid = int(((ymin+ymax)/2))
