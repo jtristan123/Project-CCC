@@ -36,6 +36,9 @@ from Rosmaster_Lib import Rosmaster
 
 from gpiozero import DistanceSensor
 from gpiozero.pins.pigpio import PiGPIOFactory
+import os
+os.environ["QT_QPA_PLATFORM"] = "xcb"
+
 
 factory = PiGPIOFactory()
 sensor = DistanceSensor(echo=24, trigger=23, pin_factory=factory)
@@ -323,7 +326,7 @@ args = parser.parse_args()
 MODEL_NAME = args.modeldir
 GRAPH_NAME = args.graph
 LABELMAP_NAME = args.labels
-min_conf_threshold = float(.4)#(args.threshold)
+min_conf_threshold = float(.005)#(args.threshold)
 resW, resH = args.resolution.split('x')
 imW, imH = int(resW), int(resH)
 use_TPU = args.edgetpu
@@ -459,13 +462,16 @@ while T:
         #cv2.rectangle(frame,TL_inside,BR_inside,(20,20,255),3)
         #cv2.putText(frame,"touch zone",(TL_inside[0]+10,TL_inside[1]-10),font,1,(20,255,255),3,cv2.LINE_AA)
 
-        # Normalize pixel values if using a floating model (i.e. if model is non-quantized)
+# Proper input preprocessing for float or quantized models
         if floating_model:
             input_data = (np.float32(input_data) - input_mean) / input_std
+        elif input_details[0]['dtype'] == np.int8:
+            input_scale, input_zero_point = input_details[0]['quantization']
+            input_data = (input_data / input_scale + input_zero_point).astype(np.int8)
+        else:
+            input_data = input_data.astype(input_details[0]['dtype'])
 
-        # Perform the actual detection by running the model with the image as input
-        #print("[INFER] Preparing input...")
-
+        
         interpreter.set_tensor(input_details[0]['index'],input_data)
         #print("[INFER] Running interpreter...")
 
@@ -474,42 +480,82 @@ while T:
 
 
         # Retrieve detection results
-        boxes = interpreter.get_tensor(output_details[boxes_idx]['index'])[0] # Bounding box coordinates of detected objects
-        classes = interpreter.get_tensor(output_details[classes_idx]['index'])[0] # Class index of detected objects
-        scores = interpreter.get_tensor(output_details[scores_idx]['index'])[0] # Confidence of detected objects
+        boxes = interpreter.get_tensor(output_details[boxes_idx]['index'])[0]
+        scores_raw = interpreter.get_tensor(output_details[scores_idx]['index'])[0]
+        classes_raw = interpreter.get_tensor(output_details[classes_idx]['index'])[0]
+
+        print("Output types:")
+        print("scores:", output_details[scores_idx]['dtype'], "quant:", output_details[scores_idx]['quantization'])
+        print("classes:", output_details[classes_idx]['dtype'], "quant:", output_details[classes_idx]['quantization'])
+
+# Dequantize scores if quantized
+        if output_details[scores_idx]['dtype'] == np.uint8 or output_details[scores_idx]['dtype'] == np.int8:
+            score_scale, score_zero_point = output_details[scores_idx]['quantization']
+            scores = (scores_raw.astype(np.float32) - score_zero_point) * score_scale
+        else:
+            scores = scores_raw.astype(np.float32)
+
+# Dequantize class IDs if quantized
+        if output_details[classes_idx]['dtype'] == np.uint8 or output_details[classes_idx]['dtype'] == np.int8:
+            class_scale, class_zero_point = output_details[classes_idx]['quantization']
+            classes = ((classes_raw.astype(np.float32) - class_zero_point) * class_scale).astype(np.int32)
+        else:
+            classes = classes_raw.astype(np.int32)
+     
+
+
         
         cone_detected = False
         closest_center_x = 0
         closest_center_y = 0
         max_mid_y = -1
         closest_box = None
-
+        
         # Loop over all detections and draw detection box if confidence is above minimum threshold
-        for i in range(3): #each frame it will perform these
-        #for i in range(len(scores)):#find all the matching objects more than one
+        #for i in range(3): #each frame it will perform these
+        for i in range(len(scores)):#find all the matching objects more than one
+            print("Detected class IDs:", classes)
+            print("Scores:", scores)
+
             if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
 
                 # Get bounding box coordinates and draw box
                 # Interpreter can return coordinates that are outside of image dimensions, 
                 # need to force them to be within image using max() and min()
-                ymin = int(max(1,(boxes[i][0] * imH)))
-                xmin = int(max(1,(boxes[i][1] * imW)))
-                ymax = int(min(imH,(boxes[i][2] * imH)))
-                xmax = int(min(imW,(boxes[i][3] * imW)))
-                box_height = ymax - ymin#print('xmin:',xmin,' ymin:',ymin,' xmax:',xmax,' ymax:',ymax)                    
-                
-                # Shift ymin 10% upward
-                ymin = int(max(1, ymin - box_height * 0.2))  # move top of box up
+                # Get bounding box coordinates
+# Clip raw box values to [0, 1]
+                ymin_raw = np.clip(boxes[i][0], 0, 1)
+                xmin_raw = np.clip(boxes[i][1], 0, 1)
+                ymax_raw = np.clip(boxes[i][2], 0, 1)
+                xmax_raw = np.clip(boxes[i][3], 0, 1)
 
-                #mid point of the box
-                x_mid = int(((xmin+xmax)/2)- ((xmax - xmin) * 0.2))
+# Scale to image dimensions
+                ymin = int(ymin_raw * imH)
+                xmin = int(xmin_raw * imW)
+                ymax = int(ymax_raw * imH)
+                xmax = int(xmax_raw * imW)
+
+                box_width = xmax - xmin
+                box_height = ymax - ymin
+                x_mid = (xmin + xmax) // 2
+                y_mid = (ymin + ymax) // 2
+
+# Print info
+                print(f"[BOX] Coordinates: xmin={xmin}, ymin={ymin}, xmax={xmax}, ymax={ymax}")
+                print(f"[BOX] Width: {box_width}, Height: {box_height}, Center: ({x_mid}, {y_mid})")
+
+
+                x_mid = int(((xmin+xmax)/2)- ((xmax - xmin) * 0.1))
                 current_x = x_mid
 
-                y_mid = int(((ymin+ymax)/2) * 0.9) #this is the y mid of the box, used to find closest cone
+                y_mid = int(((ymin+ymax)/2))
                 
                 # Draw label
                 object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
                 if object_name == "cone": #only do this if cone is found
+                    print(">>> Drawing box for detected cone...")
+                    print(f"[DEBUG] Detected object_name: '{object_name}'")
+
                     cone_detected = True
                     #if ymin < 250: #this is placeholder for the closest cone(perform pick-up )
                     cv2.rectangle(frame, (xmin,ymin), (xmax,ymax), (10, 255, 0), 1)
@@ -620,6 +666,10 @@ while T:
         #print('imshow here')
         # Draw framerate in corner of frame
         cv2.putText(frame,'FPS: {0:.2f}'.format(frame_rate_calc),(30,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0),2,cv2.LINE_AA)
+        
+        cv2.rectangle(frame, (50, 50), (150, 150), (255, 0, 0), 2)
+        cv2.putText(frame, "TEST BOX", (50, 45), font, 1, (0, 0, 255), 2)
+
 
             # All the results have been drawn on the frame, so it's time to display it.
         cv2.imshow('Object detector', frame)
