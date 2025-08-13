@@ -221,6 +221,7 @@ def move_forward():
 			
 def read_sensor():
     global flag
+    global arm_deployed
     flag = 1
     print('entering sensor')
 
@@ -234,6 +235,7 @@ def read_sensor():
 
         if dis < 8:
             print("Obstacle detected! Distance: {:.2f} cm".format(dis))
+            arm_deployed = True
             #if needed ill add a function for robot to wait
             stop_event.set()  # signal to stop the bot
             flag = 0
@@ -242,7 +244,7 @@ def read_sensor():
         sleep(0.1)
 
     print('read sensor exiting')
-
+    print('arm_deployed = ', arm_deployed)
     #global flag
     #flag = 1
     #print('enter sensor')
@@ -323,7 +325,7 @@ args = parser.parse_args()
 MODEL_NAME = args.modeldir
 GRAPH_NAME = args.graph
 LABELMAP_NAME = args.labels
-min_conf_threshold = float(.4)#(args.threshold)
+min_conf_threshold = float(.9)#(args.threshold)
 resW, resH = args.resolution.split('x')
 imW, imH = int(resW), int(resH)
 use_TPU = args.edgetpu
@@ -427,6 +429,19 @@ time.sleep(1)
 #    _ = videostream.read()
 #    time.sleep(0.1)   # small pause between reads
 #print("Camera warmed up, starting main loop.")
+#set arm up right
+#starting point and reset
+#bot.set_uart_servo_torque(0)
+#print("enable = 0")
+bot.set_uart_servo_angle( 1, 90, run_time = 1500)
+time.sleep(1)
+bot.set_uart_servo_angle( 2, 170, run_time = 1500)
+time.sleep(1)
+bot.set_uart_servo_angle( 4, 0, run_time = 1500)
+time.sleep(1)
+bot.set_uart_servo_angle( 3, 0, run_time = 1500)
+print("arm reset")
+arm_deployed = False #this is to make sure the arm is not deployed at the start
 
 #for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
 while T:
@@ -434,6 +449,7 @@ while T:
     centered = False
     strafe_thread = None
     cone_detected = False
+  #this is to make sure the arm is not deployed at the start
 
     # Start timer (for calculating frame rate)
     while not centered: #added this <-------------------------------------------------------
@@ -502,7 +518,7 @@ while T:
                 ymin = int(max(1, ymin - box_height * 0.2))  # move top of box up
 
                 #mid point of the box
-                x_mid = int(((xmin+xmax)/2)- ((xmax - xmin) * 0.2))
+                x_mid = int(((xmin+xmax)/2)- ((xmax - xmin) * 0.09))
                 current_x = x_mid
 
                 y_mid = int(((ymin+ymax)/2) * 0.9) #this is the y mid of the box, used to find closest cone
@@ -601,7 +617,34 @@ while T:
                     sensor_thread.start()
                     move_thread.join()
                     sensor_thread.join() #to exit end threding and do the PICK-UP
-                    print("robot stopped. Deploying arm...")
+                    # Give extra time to settle/alignment
+                    #print("Waiting for final adjustments...")
+                    #time.sleep(0.5)  # half a second pause
+                    print('arm_deployed outside the if statement = ', arm_deployed)
+                    #bot.set_uart_servo_torque(2)
+                    #print("enable = 2")
+                    #looks like it goes in here when cone is detected no matter what the position is
+                    
+                    if arm_deployed == True:
+                        print('robot stopped shounld be within 7cm. Deploying arm...')
+                        print('arm_deployed inside the if statement = ', arm_deployed)
+                     #making sure arm is up right
+                        bot.set_uart_servo_angle( 6, 170, run_time = 1500)
+                        time.sleep(1)
+                        bot.set_uart_servo_angle( 1, 90, run_time = 1500)
+                        time.sleep(1)
+                        bot.set_uart_servo_angle( 2, 90, run_time = 1500)
+                        time.sleep(1)
+                        bot.set_uart_servo_angle( 4, 45, run_time = 1500)
+                        time.sleep(1)
+                        bot.set_uart_servo_angle( 2, 60, run_time = 1500)
+                        time.sleep(1)
+                        print("arm moved")
+                        #bot.set_uart_servo_angle( 4, 0, run_time = 1500)
+                        #time.sleep(1)
+                    else:    
+                        arm_deployed = False
+                        print('else: arm_deployed = F', arm_deployed)
                     #add ROBOT_ARM function here
                     #wait till robot arm is done
                     #break
